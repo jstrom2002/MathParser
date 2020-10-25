@@ -18,7 +18,7 @@ namespace MathParser
 		Polynomial() = default;
 		Polynomial(std::vector<real> coef);
 
-		real evaluate(real n);
+		virtual real evaluate(real n, int precision = 4);
 		complex evaluate(complex z);
 		std::vector<real> realRoots();
 		virtual std::string to_string(int precision=4);

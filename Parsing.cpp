@@ -1,6 +1,5 @@
 #include "Parsing.h"
 #include "StringUtils.h"
-#include "ComplexNumber.h"
 #include "MathLib.h"
 #include <iostream>
 #include <string>
@@ -417,7 +416,7 @@ namespace MathParser
 	{
 		std::string replacer = "(";
 		complex z = complex(ParseInputNumber(str.substr(start, end - start)));
-		replacer.append(toStringBothParts(z, 4));
+		replacer.append(to_string_precision(z, 4));
 		replacer.append(")");
 		str.erase(start, end - start);
 		str.insert(start, replacer);
@@ -489,7 +488,7 @@ namespace MathParser
 	std::string processTwoTermOperationComplex(std::string funct, std::string tempstr) {
 		complex x = calculateArithmeticComplex(tempstr);
 		std::string replc = ("(");
-		replc.append(toStringBothParts(x, 4));
+		replc.append(to_string_precision(x, 4));
 		replc.append(")");
 		funct = replaceString(funct, tempstr, replc);
 		return funct;

@@ -811,7 +811,7 @@ namespace MathParser
 			for (i = 0; i < arrSize; i++) {
 				if (numArr[i] != 0 | count == 1) 
 				{
-					strm << to_stringPrecision(numArr[i], 30U);
+					strm << to_string_precision(numArr[i], 30U);
 					count = 1;
 				}
 			}

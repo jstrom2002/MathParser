@@ -44,5 +44,4 @@ namespace MathParser
 #elif _USE32BIT
 	typedef uint32_t highpUint;
 #endif
-
 }

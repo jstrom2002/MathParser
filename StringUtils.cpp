@@ -105,7 +105,8 @@ namespace MathParser
 		return s;
 	}
 
-	std::string to_stringPrecision(real val, unsigned int precisn) {
+	std::string to_string_precision(real val, unsigned int precisn) 
+	{
 		std::ostringstream out;
 		int p = precisn;
 		if (val == floor(val)) { p = 0; }
@@ -113,6 +114,35 @@ namespace MathParser
 		out << std::setprecision(p) << val;
 		out << std::scientific;
 		return out.str();
+	}
+
+	std::string to_string_precision(complex z, unsigned int precision) 
+	{
+		std::string answer;
+		std::ostringstream strs;
+		int prc = precision;
+		if (z.real() == std::floor(z.real()))
+			prc = 0;
+		strs << std::fixed << std::setprecision(prc) << z.real();
+		answer.append(strs.str());
+		prc = precision;
+		if (z.imag() == floor(z.imag()))
+			prc = 0;
+		if (z.imag() != 0) {
+			if (z.imag() < 0) {
+				answer.append("-");
+			}
+			else {
+				answer.append("+");
+			}
+			if (std::abs(z.imag()) != 1) {
+				std::ostringstream strs2;
+				strs2 << std::fixed << std::setprecision(prc) << std::abs(z.imag());
+				answer.append(strs2.str());
+			}
+			answer.append("i");
+		}
+		return answer;
 	}
 
 	std::string toHex(int val) {

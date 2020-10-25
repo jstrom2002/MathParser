@@ -10,7 +10,6 @@ namespace MathParser
 {
 	Polynomial::Polynomial(std::vector<real> coef)
 	{
-		// copy vector to coefficients vector.
 		coefficient = coef;
 	}
 
@@ -28,7 +27,8 @@ namespace MathParser
 		return length;
 	}
 
-	void Polynomial::randomize() {
+	void Polynomial::randomize() 
+	{
 		srand(clock());
 		int terms = coefficient.size();
 		coefficient.clear();
@@ -38,51 +38,53 @@ namespace MathParser
 		}
 	}
 
-	real Polynomial::largestCoefficient() {
+	real Polynomial::largestCoefficient() 
+	{
 		real biggest = 0;
 		for (int i = 0; i < coefficient.size(); ++i) {
 			if (fabsf(coefficient[i]) > biggest) { biggest = abs(coefficient[i]); }
 		}
 		return biggest;
 	}
-
-	// Uses Horner's method for optimal speed.
-	real Polynomial::evaluate(real n) {
+	
+	real Polynomial::evaluate(real n, int precision) 
+	{// Uses Horner's method for optimal speed.
 		real result = 0.0;
-		for (int idx = coefficient.size() - 1; idx >= 0; idx--) {
-			result = fma(result, n, coefficient[idx]);
-		}
+		for (int idx = coefficient.size() - 1; idx >= 0; idx--) 		
+			result = fma(result, n, coefficient[idx]);		
 		return result;
 	}
 
-	complex Polynomial::evaluate(complex z) {
-		std::vector<real> v = coefficient;//copy coefficient vec.
+	complex Polynomial::evaluate(complex z) 
+	{
+		std::vector<real> v = coefficient;
 		complex s(0, 0);
-		for (std::vector<real>::const_reverse_iterator i = v.rbegin(); i != v.rend(); i++) {
-			s = (s * z) + *i;
-		}
+		for (std::vector<real>::const_reverse_iterator i = v.rbegin(); i != v.rend(); i++)
+			s = (s * z) + *i;		
 		return s;
 	}
 
-	//given some root, this method will refine it until it is much more accurate
-	real Polynomial::NewtonsMethod(real x) {
+	
+	real Polynomial::NewtonsMethod(real x) 
+	{// Given some root guess, this method will refine it until it is much more accurate.
 		real x1;
 		real f, dfdx;
 		const real epsilon = 0.0000001; //tolerance
 		const int n = 15; //# steps
-		Polynomial deriv = derivative();//derivative of polynomial
+		Polynomial deriv = derivative();
 
 		x1 = x;//initial guess
 
 		for (int i = 2; i <= n; ++i) {
 			x = x1;
-			f = evaluate(x); //Defines the function 
-			dfdx = deriv.evaluate(x); //Derivative of the function
-			x1 = x - f / dfdx; //Newton Method formula
+			f = evaluate(x);
+			dfdx = deriv.evaluate(x);
+			x1 = x - f / dfdx;
 		}
-		if (abs(x - x1) < epsilon) { //checks if guesses are within a certain tolerance value 
+		
+		if (abs(x - x1) < epsilon) 
 			return x1;
-		}
+
 		return 0;
 	}
 

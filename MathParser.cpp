@@ -3,11 +3,82 @@
 #include "Polynomial.h"
 #include "Function.h"
 #include "Parsing.h"
+#include "StringUtils.h"
 #include <string>
 #include <algorithm>
+#include <regex>
+#include <iostream>
 
 namespace MathParser
 {
+	MathParser::MathParser() : precision(4), LAST(0)
+	{
+	}
+
+	std::string MathParser::parseFunctionReference(std::string str, int idx)
+	{
+		if (idx >= savedFunctions.size())
+			return "";
+
+		if (str.find("evaluate(") != std::string::npos)
+		{
+			// Get terms in parentheses and evaluate
+			std::vector<real> vals = ParseNInputNumbers(
+				str.substr(str.find("("), str.find(")")));
+			LAST = savedFunctions[idx].evaluate(vals, this->precision);
+			return to_string_precision(LAST, this->precision);
+		}
+
+		return "";
+	}
+
+	std::string MathParser::parsePolynomialReference(std::string str, int idx)
+	{
+		if (idx >= savedPolynomials.size())
+			return "";
+
+		if (str.find("evaluate(") != std::string::npos)
+		{
+			// Get terms in parentheses and evaluate
+			std::vector<real> vals = ParseNInputNumbers(
+				str.substr(str.find("("), str.find(")")));
+			LAST = savedPolynomials[idx].evaluate(vals[0], this->precision);
+			return to_string_precision(LAST, this->precision);
+		}
+		else if (str.find("realRoots()") != std::string::npos)
+		{			
+			std::vector<real> vals = savedPolynomials[idx].realRoots();
+			std::string outputStr = "real roots: ";
+			for (int i = 0; i < vals.size(); ++i)
+			{
+				outputStr.append(to_string_precision(vals[i], precision));
+				if (i < vals.size() - 1)
+					outputStr.append(",");
+			}
+			return outputStr;
+		}
+		else if (str.find("roots()") != std::string::npos)
+		{
+			std::vector<complex> vals = savedPolynomials[idx].roots();
+			std::string outputStr = "roots: ";
+			for (int i = 0; i < vals.size(); ++i)
+			{
+				outputStr.append(to_string_precision(vals[i], precision));
+				if (i < vals.size() - 1)
+					outputStr.append(",");
+			}
+			return outputStr;
+		}
+
+		return "";
+	}
+
+	void MathParser::clear()
+	{
+		savedFunctions.clear();
+		savedPolynomials.clear();
+	}
+
 	std::string MathParser::printSavedFunctions()
 	{
 		std::string str = "";
@@ -48,13 +119,39 @@ namespace MathParser
 		if (!str.length() || str == " " || str == "\n") 
 			return ""; 
 
-		// Check for functions, polynomials, etc.
-		if (str.find("=") != std::string::npos)
+		// Replace all occurances of word 'LAST' with value for 'last.'
+		if (str.find("LAST") != std::string::npos)
 		{
+			std::string laststr = to_string_precision(LAST, this->precision);
+			str = replaceString(str, "LAST", laststr);
+		}
+
+		// Check for reference to saved objects
+		if (std::regex_match(str, std::regex("[a-z][0-9]\..*")) ||
+			std::regex_match(str, std::regex("[a-z][0-9][0-9]\..*")))
+		{
+			// Get index of referenced object.
+			std::string prestr = str.substr(0, str.find(")"));
+			int idx = std::stoi(str.substr(1, str.find("(")));
+			if (idx < 0)
+				return "";
+			std::string afterDot = str.substr(str.find(".") + 1);
+
+			if (prestr[0] == 'f')// Find reference to saved function.
+				return parseFunctionReference(afterDot, idx);
+			else if (prestr[0] == 'p')// Find reference to saved polynomial.
+				return parsePolynomialReference(afterDot, idx);
+		}
+
+		// Check for declared functions, polynomials, etc.
+		else if (str.find("=") != std::string::npos)
+		{
+			// Save function or polynomial.
 			if (str.find("p(") != std::string::npos)			
 				savedPolynomials.push_back(Polynomial(ParsePolynomial(str)));			
 			else			
-				savedFunctions.push_back(Function(ParseFunction(str)));			
+				savedFunctions.push_back(Function(ParseFunction(str)));	
+
 			return "";
 		}
 
@@ -65,7 +162,8 @@ namespace MathParser
 			str = removeSpaces(str);
 
 			Function fp("", str);
-			return std::to_string(fp.evaluate(0, this->precision));
+			LAST = fp.evaluate(0, this->precision);
+			return to_string_precision(LAST, this->precision);
 		}
 		else
 			return "";
@@ -149,102 +247,68 @@ namespace MathParser
 			}
 		}
 
-		//SEPARATE VALUES
-		//===============
-		//cut up input string into smaller strings and place them in the "vals" string vector
-		std::vector<std::string> vals;
-		for (int i = 0; i < input.length(); ++i) {
-			if (i > 0 && input[i] == '+') {
-				std::string s = input.substr(0, i);
-				if (s[0] == '+') { s[0] = ' '; }
-				removeSpaces(s);
-				while (s[0] == ' ') { s = s.substr(1); }//makes sure to remove blank space at the beginning of the string
-				vals.push_back(s);
-				input.erase(0, i);
-				i = 0;
+		// Find terms where exponent >= 2.
+		std::vector<real> coefs;
+		std::vector<int> expos;
+		while (input.find("+"))
+		{
+			// Get everything up to next '+' symbol, which even negative numbers
+			// will have now.
+			size_t nextIdx = std::string::npos;
+			std::string tmp = input.substr(0, nextIdx=input.find("+"));
+			
+			if (nextIdx == std::string::npos || !tmp.length())
+				break;
+
+			// Catch case where polynomial term is scalar.
+			if (tmp.find("x") == std::string::npos)
+			{
+				coefs.push_back(ParseInputNumber(tmp));
+				expos.push_back(0);
 			}
-		}
-		//deal with the last of the input string
-		if (input[0] == '+') { input[0] = ' '; }
-		removeSpaces(input);
-		while (input[0] == ' ') { input = input.substr(1); }//makes sure to remove blank space at the beginning of the string
-		vals.push_back(input);
 
-
-		//GET MATCHING EXPONENT-COEFFICIENT PAIRS
-		//=======================================
-		//now cut the strings in the vector into two parts:  the coefficient and the exponent
-		std::vector<std::string> indices;
-		std::vector<std::string> coefs;
-		for (int i = 0; i < vals.size(); ++i) {
-			if (vals[i].find("^") == std::string::npos) {
-				if (vals[i].find("x") != std::string::npos) //case: no "^" but an x.  i.e. '23.23x'
-				{
-					indices.push_back("1");
-					std::string temp = vals[i];
-					bool onlyX = true;
-					for (int j = 0; j < temp.length(); ++j) {//check to see if it's just 'x' or if it has a coefficient (i.e. '2.34x')
-						if (std::isdigit(temp[j])) 
-							onlyX = false;
-					}
-					if (onlyX) //put a '1' at the beginning if there isn't one
-						temp.insert(temp.begin(), '1');				
-					std::replace(temp.begin(), temp.end(), 'x', ' ');
-					removeSpaces(temp);
-					coefs.push_back(temp);
-				}
-				if (vals[i].find("x") == std::string::npos) {//case: no o'^', no 'x'.  A single value alone (i.e. '12.32x^0')
-					indices.push_back("0");
-					coefs.push_back(vals[i]);
-				}
+			// Catch case where there is no exponent (ie '3x').
+			else if (tmp.find("^") == std::string::npos)
+			{
+				std::string coef = tmp.substr(0, tmp.find("x"));
+				coefs.push_back(coef.length() ? ParseInputNumber(coef) : 1.0);
+				expos.push_back(1);
 			}
-			else {
-				for (int j = 0; j < vals[i].size(); ++j) {//case" a value with an 'x' and a '^' which needs separating in to coefficient and exponent
-					if (j > 0 && vals[i][j] == '^') {
-						std::string s = vals[i].substr(j + 1);
-						std::string c = vals[i].substr(0, j - 1);
-						if (s[0] == '^') 
-							s[0] = ' ';
-						removeSpaces(s);
-						
-						//makes sure to remove blank space at the beginning of the string
-						while (s[0] == ' ') 
-							s = s.substr(1);
-						indices.push_back(s);
 
-						//check now to see if there actually is a coefficient or if we've got a case like 'x^4'
-						bool isCoefficient = false;
-						for (int q = 0; q < c.size(); ++q) 
-						{ 
-							if (std::isdigit(c[q])) 
-							{ 
-								isCoefficient = true;	
-								q = c.size(); 
-							} 
-						}
-
-						//if there are no numbers, put a "1" string in there
-						if (!isCoefficient) 
-							coefs.push_back("1");
-						else //else, treat normally
-							coefs.push_back(c);
-					}
-				}
+			// Else, term should be formatted as 'ax^b'.
+			else
+			{
+				std::string coef = tmp.substr(0, tmp.find("x"));
+				coefs.push_back(coef.length() ? ParseInputNumber(coef) : 1.0);
+				std::string exp = tmp.substr(tmp.find("^") + 1);
+				expos.push_back(exp.length() ? ParseInputNumber(exp) : 1.0);
 			}
+
+			// Move down string to next term.
+			if(nextIdx != std::string::npos)
+				input = input.substr(nextIdx + 1);
 		}
 
-		//convert all strings to real/int values
-		//======================================
-		int largestExponent = ParseInputNumber(indices[0]);
-		++largestExponent;
+		// Catch case where string still has a final, scalar polynomial term.
+		if (input.length())
+		{
+			coefs.push_back(ParseInputNumber(input));
+			expos.push_back(0);
+		}
+
+		// Get largest value in exponent array to determine max # coefficients.
+		int maxExponent = *std::max_element(expos.begin(), expos.end());
+		if (maxExponent > 0)
+			maxExponent++;
+
+		// Create an array of coefficients indexed by exponent.
 		std::vector<real> v;
-		v.resize(largestExponent + 1);
-		for (int i = 0; i < largestExponent + 1; ++i) {
-			v[i] = 0;
+		v.resize(maxExponent,0);	
+		for (int i = 0; i < expos.size(); ++i)
+		{
+			v[expos[i]] = coefs[i];
 		}
-		for (int i = 0; i < indices.size(); ++i) {
-			v[(int)ParseInputNumber(indices[i])] = ParseInputNumber(coefs[i]);
-		}
+				
  		Polynomial p(v);
 		return p;
 	}

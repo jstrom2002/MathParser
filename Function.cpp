@@ -421,7 +421,7 @@ namespace MathParser
 		//replace all variables with their real value from real* vals
 		if (vals.size() > 0) {
 			for (int i = 0; i < variables.size(); ++i) {
-				std::string val = to_stringPrecision(vals[i], precision);//real values for variable made into a string
+				std::string val = to_string_precision(vals[i], precision);//real values for variable made into a string
 
 			   //check string for spots to replace char, then perform replace function
 				for (int j = 0; j < funct.size(); ++j) {
@@ -499,14 +499,14 @@ namespace MathParser
 							chk = removeSpaces(chk);
 							Function f2(chk);
 							real p = f2.evaluate(0.0);
-							std::string replc = to_stringPrecision(p, precision);
+							std::string replc = to_string_precision(p, precision);
 							tempstr = replaceString(tempstr, chk, replc);
 						}
 					}
 
 					//now evaluate the function, get the real value, and replace the whole thing in the original string (i.e. 'sin(0)' --> '0')
 					real tmpdbl = evalFunction(tempstr);
-					funct = replaceString(funct, toReplace, to_stringPrecision(tmpdbl, precision));
+					funct = replaceString(funct, toReplace, to_string_precision(tmpdbl, precision));
 					foundOne = true;
 				}
 			}

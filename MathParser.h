@@ -15,12 +15,15 @@ namespace MathParser
 	{
 	public:		
 		int precision;
-		MathParser() : precision(4) {}
+
+		MathParser();
 		std::string parse(std::string);
 		std::string printSavedFunctions();
 		std::string printSavedPolynomials();
+		void clear();
 
 	protected:
+		real LAST;
 		std::vector<char> variables;
 		std::vector<Function> savedFunctions;
 		std::vector<Polynomial> savedPolynomials;
@@ -34,5 +37,9 @@ namespace MathParser
 		// Turns a string of format 'p1(x) = x^3 + 2x + -1' to a vector of values, 
 		// then constructs a polynomial from that vector.
 		Polynomial ParsePolynomial(std::string in);
+
+		// Helper subfunctions for handling refernces to saved memory.
+		std::string parseFunctionReference(std::string str, int idx);
+		std::string parsePolynomialReference(std::string str, int idx);
 	};
 }

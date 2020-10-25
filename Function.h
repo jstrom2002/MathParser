@@ -19,7 +19,7 @@ namespace MathParser
 		Function(std::vector<std::string> funct);
 
 		real evaluate(std::vector<real> vals, int precision = 4);
-		real evaluate(real x, int precision = 4);
+		virtual real evaluate(real x, int precision = 4);
 		virtual std::string to_string(int precision = 4);
 
 	private:
