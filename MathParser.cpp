@@ -309,6 +309,10 @@ namespace MathParser
 			v[expos[i]] = coefs[i];
 		}
 				
+		// Finally, reverse array (since 'x^0' will be the first element in the
+		// array, yet the first value in the string will be the highest exponent).
+		std::reverse(v.begin(), v.end());
+
  		Polynomial p(v);
 		return p;
 	}

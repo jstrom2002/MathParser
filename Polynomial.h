@@ -1,11 +1,10 @@
 /**
-*  \brief Polynomial class used for polynomials with positive, integer-valued exponents, represented
-*			as indices of the coefficient vector (ie '2x^2' is represented as 'coefficient[3]=2')
-*
+*  \brief Polynomial class used for polynomials with positive, integer-valued
+*		  exponents, represented as indices of the coefficient vector 
+*		  (ie '2x^2 + x + 1' is represented as 'coefficient' array {2,1,1}')
 */
 
 #pragma once
-#include <unordered_map>
 #include <vector>
 #include "Types.h"
 #include "BaseObject.h"
@@ -23,6 +22,27 @@ namespace MathParser
 		std::vector<real> realRoots();
 		virtual std::string to_string(int precision=4);
 		std::vector<complex> roots();
+
+		Polynomial& operator*=(Polynomial& rhs);
+		Polynomial& operator*=(real x);
+		Polynomial& operator/=(Polynomial& rhs);
+		Polynomial& operator/=(real x);
+		Polynomial& operator+=(Polynomial& rhs);
+		Polynomial& operator+=(real x);
+		Polynomial& operator-=(Polynomial& rhs);
+		Polynomial& operator-=(real x);
+		friend Polynomial operator+(Polynomial& lhs, Polynomial rhs);
+		friend Polynomial operator+(Polynomial& lhs, real x);
+		friend Polynomial operator+(real x, Polynomial& rhs);
+		friend Polynomial operator-(Polynomial& lhs, Polynomial rhs);
+		friend Polynomial operator-(Polynomial& lhs, real x);
+		friend Polynomial operator-(real x, Polynomial& rhs);
+		friend Polynomial operator*(Polynomial& lhs, Polynomial rhs);
+		friend Polynomial operator*(Polynomial& lhs, real x);
+		friend Polynomial operator*(real x, Polynomial& rhs);
+		friend Polynomial operator/(Polynomial& lhs, Polynomial rhs);
+		friend Polynomial operator/(Polynomial& lhs, real x);
+		//friend Polynomial operator/(real x, Polynomial& rhs);
 
 	protected:
 		// Array of per-exponent coefficient values for the polynomial.
@@ -61,6 +81,25 @@ namespace MathParser
 		real findRoot();
 		real findRoot(real lower_bound, real upper_bound);
 		std::vector<real> findRealRoots();
-	};
 
+		// Helper functions to reduce reusing code for operator overloads.
+		Polynomial add(Polynomial a, Polynomial b);
+		Polynomial add(Polynomial a, real  b);
+		Polynomial add(real b, Polynomial a);
+		Polynomial subtract(Polynomial a, Polynomial b);
+		Polynomial subtract(Polynomial a, real  b);
+		Polynomial subtract(real b, Polynomial a);
+		Polynomial multiply(Polynomial a, Polynomial b);
+		Polynomial multiply(Polynomial a, real b);
+		Polynomial multiply(real b, Polynomial a);
+		Polynomial divide(Polynomial p, Polynomial q);
+		Polynomial divide(Polynomial p2, real q);
+		//Polynomial divide(real q, real p2);
+	};	
+}
+
+namespace std
+{
+	// overload for standard 'pow()' function to use Polynomial class.
+	MathParser::Polynomial pow(MathParser::Polynomial p, int b);
 }

@@ -2,6 +2,7 @@
 #include "MathParser.h"
 #include "StringUtils.h"
 #include "Parsing.h"
+#include "Polynomial.h"
 #include <iostream>
 #include <ctime>
 
@@ -385,6 +386,144 @@ namespace MathParser
 		return true;
 	}
 
+	bool UnitTests::polynomialArithmeticTest()
+	{
+		// Initialize test polynomials.
+		Polynomial p1(std::vector<real>{1, 2, 2});//x^2 + 2x + 2.
+		Polynomial p2(std::vector<real>{1, 0, -1});//x^2 - 1
+
+		Polynomial p3 = p1 + 2.0;
+		std::string testStr = p3.to_string();
+		if (testStr != "x^2 + 2x + 4")
+		{
+			std::cout << "p1 = " << p1.to_string() << std::endl;
+			std::cout << "p1 + 2 = " << p3.to_string() << std::endl;
+			return false;
+		}
+
+		p3 = 2.0 + p1;
+		testStr = p3.to_string();
+		if (testStr != "x^2 + 2x + 4")
+		{
+			std::cout << "p1 = " << p1.to_string() << std::endl;
+			std::cout << "p1 * 2 = " << p3.to_string() << std::endl;
+			return false;
+		}
+
+		p3 = p1 + p2;
+		testStr = p3.to_string();
+		if (testStr != "2x^2 + 2x + 1")
+		{
+			std::cout << "p1 = " << p1.to_string() << std::endl;
+			std::cout << "p2 = " << p2.to_string() << std::endl;
+			std::cout << "p1 + p2 = " << p3.to_string() << std::endl;
+			return false;
+		}
+
+		p3 = p1 - 2.0;
+		testStr = p3.to_string();
+		if (testStr != "x^2 + 2x")
+		{
+			std::cout << "p1 = " << p1.to_string() << std::endl;
+			std::cout << "p1 - 2 = " << p3.to_string() << std::endl;
+			return false;
+		}
+
+		p3 = 2.0 - p1;
+		testStr = p3.to_string();
+		if (testStr != "-x^2 - 2x")
+		{
+			std::cout << "p1 = " << p1.to_string() << std::endl;
+			std::cout << "2 - p1 = " << p3.to_string() << std::endl;
+			return false;
+		}
+
+		p3 = p1 - p2;
+		testStr = p3.to_string();
+		if (testStr != "2x + 3")
+		{
+			std::cout << "p1 = " << p1.to_string() << std::endl;
+			std::cout << "p2 = " << p2.to_string() << std::endl;
+			std::cout << "p1 - p2 = " << p3.to_string() << std::endl;
+			return false;
+		}
+
+		p3 = p1 * 2.0;
+		testStr = p3.to_string();
+		if (testStr != "2x^2 + 4x + 4")
+		{
+			std::cout << "p1 = " << p1.to_string() << std::endl;
+			std::cout << "p1 * 2 = " << p3.to_string() << std::endl;
+			return false;
+		}
+
+		p3 = 3.0 * p1;
+		testStr = p3.to_string();
+		if (testStr != "3x^2 + 6x + 6")
+		{
+			std::cout << "p1 = " << p1.to_string() << std::endl;
+			std::cout << "3.0 * p1 = " << p3.to_string() << std::endl;
+			return false;
+		}
+
+		p3 = (p1 * p2);
+		testStr = p3.to_string();
+		if (testStr != "x^4 + 2x^3 + x^2 - 2x - 2")
+		{
+			std::cout << "p1 = " << p1.to_string() << std::endl;
+			std::cout << "p2 = " << p2.to_string() << std::endl;
+			std::cout << "p1 * p2 = " << p3.to_string() << std::endl;
+			return false;
+		}
+
+		p3 = (p1 * p2);
+		testStr = p3.to_string();
+		if (testStr != "x^4 + 2x^3 + x^2 - 2x - 2")
+		{
+			std::cout << "p1 = " << p1.to_string() << std::endl;
+			std::cout << "p2 = " << p2.to_string() << std::endl;
+			std::cout << "p1 * p2 = " << p3.to_string() << std::endl;
+			return false;
+		}
+
+		return true;
+	}
+
+	bool UnitTests::rootTest()
+	{	
+		// Don't forget the input real array must be from lowest-to-highest
+		// exponent, the following initializes the polynomial 'x^2 - 5x + 6'.
+		std::vector<real> roots = Polynomial(std::vector<real>{6, -5, 1}).realRoots();
+		if (roots.size() != 2 && roots[0] != 3 && roots[1] != 2)
+		{
+			std::cout << "expected roots: {3,2}" << std::endl;
+			std::cout << "test results = {";
+			for (int i = 0; i < roots.size(); ++i)
+			{
+				std::cout << roots[i];
+				if(i<roots.size()-1)
+					std::cout << ",";
+			}
+			std::cout << "}" << std::endl;
+		}
+
+		roots = Polynomial(std::vector<real>{-2,-1,-2,1}).realRoots();
+		if (roots.size() != 3 && roots[0] != 2 && roots[1] != 1 && roots[2] != -1)
+		{
+			std::cout << "expected roots: {2,1,-1}" << std::endl;
+			std::cout << "test results = {";
+			for (int i = 0; i < roots.size(); ++i)
+			{
+				std::cout << roots[i];
+				if (i < roots.size() - 1)
+					std::cout << ",";
+			}
+			std::cout << "}" << std::endl;
+		}
+
+		return true;
+	}
+
 	void UnitTests::runAll()
 	{
 		bool passed = false;
@@ -449,6 +588,20 @@ namespace MathParser
 		if (!(passed = parserTest()))
 		{
 			std::cout << "ERROR! Parser test failed." << std::endl;
+			return;
+		}
+
+		// Run polynomial arithmetic test.
+		if (!(passed = polynomialArithmeticTest()))
+		{
+			std::cout << "ERROR! Polynomial arithmetic test failed." << std::endl;
+			return;
+		}
+
+		// Run polynomial root test.
+		if (!(passed = rootTest()))
+		{
+			std::cout << "ERROR! Root test failed." << std::endl;
 			return;
 		}
 

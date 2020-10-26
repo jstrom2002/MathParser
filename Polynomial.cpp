@@ -6,10 +6,36 @@
 #include <iomanip>
 #include <cmath>
 
+namespace std
+{
+	MathParser::Polynomial pow(MathParser::Polynomial p, int b)
+	{
+		if (b == 0)
+			return MathParser::Polynomial(std::vector<MathParser::real>{1});
+
+		MathParser::Polynomial p2(p);
+		if (b > 1) 
+		{
+			for (int i = 1; i < b; ++i) 
+			{
+				p2 *= p;
+			}
+		}
+
+		return p2;
+	}
+}
+
 namespace MathParser
 {
 	Polynomial::Polynomial(std::vector<real> coef)
 	{
+		// Remove any unnecessary coefficients.
+		while (coef[0] == 0)
+		{
+			coef.erase(coef.begin());
+		}
+
 		coefficient = coef;
 	}
 
@@ -33,7 +59,7 @@ namespace MathParser
 		int terms = coefficient.size();
 		coefficient.clear();
 		for (int i = 0; i < terms; i++) {
-			real n = ((real )rand() / 10000) * pow(-1, rand() % 2);
+			real n = ((real )rand() / 10000) * std::pow(-1.0, rand() % 2);
 			coefficient.push_back(n);
 		}
 	}
@@ -311,7 +337,7 @@ namespace MathParser
 		if (p.coefficient.size() <= 1) { return 0; }
 		if (p.coefficient.size() == 2) { return (-p.coefficient[0] / p.coefficient[1]); }
 		if (p.coefficient.size() == 3) {
-			real part1 = pow(p.coefficient[1], 2) - (4 * p.coefficient[0] * p.coefficient[2]);
+			real part1 = std::pow(p.coefficient[1], 2) - (4 * p.coefficient[0] * p.coefficient[2]);
 			if (part1 >= 0) { return ((-p.coefficient[1] + sqrt(part1)) / (2 * p.coefficient[2])); }
 			else { return 0; }
 		}
@@ -417,8 +443,12 @@ namespace MathParser
 	}
 
 	std::vector<real> Polynomial::realRoots() {
-		Polynomial p(coefficient);//Make a copy of this polynomial for alteration.
-		
+		// Get a copy of the coefficients array, which must be reversed
+		// to be in a sensible order for the root-finding algorithm
+		// (ie least to greatest exponent).
+		Polynomial p(coefficient);
+		std::reverse(p.coefficient.begin(), p.coefficient.end());
+
 		std::vector<real> candidates;
 		if (p.coefficient.size() <= 1) { return candidates; }
 		if (p.coefficient.size() == 2) {
@@ -426,7 +456,7 @@ namespace MathParser
 			return candidates;
 		}
 		if (p.coefficient.size() == 3) {
-			real part2 = pow(p.coefficient[1], 2) - (4 * p.coefficient[0] * p.coefficient[2]);
+			real part2 = std::pow(p.coefficient[1], 2) - (4 * p.coefficient[0] * p.coefficient[2]);
 			if (part2 >= 0) {
 				real part1 = (-p.coefficient[1]) / (2 * p.coefficient[2]);
 				part2 = sqrt(part2) / (2 * p.coefficient[2]);
@@ -477,7 +507,7 @@ namespace MathParser
 		real M = temp.largestCoefficient() + 1;//by Cauchy's theorem
 		std::vector<real > answer;
 		real Hbound = 0.5 * ((std::abs(coefficient[coefficient.size() - 2]) - 1) + 
-			sqrt(pow(coefficient[coefficient.size() - 2] - 1, 2) + (4 * M)));//Sun and Hsieh bound
+			sqrt(std::pow(coefficient[coefficient.size() - 2] - 1, 2) + (4 * M)));//Sun and Hsieh bound
 		answer.push_back(-Hbound);
 		answer.push_back(Hbound);
 
@@ -498,6 +528,7 @@ namespace MathParser
 
 	std::string Polynomial::to_string(int precision) {
 		std::stringstream s;
+		std::reverse(coefficient.begin(), coefficient.end());
 
 		int lastnonzero = 0;
 		for (int i = coefficient.size() - 1; i >= 0; i--) { 
@@ -567,6 +598,8 @@ namespace MathParser
 		std::string temp = s.str();
 		while (!std::isdigit(temp[0]) && temp[0] != 'x' && temp[0] != '-')
 			temp = temp.substr(1);
+
+		std::reverse(coefficient.begin(), coefficient.end());
 		return temp;
 	}
 
@@ -578,7 +611,7 @@ namespace MathParser
 		if (p.coefficient.size() <= 1) { return 0; }
 		if (p.coefficient.size() == 2) { return (-p.coefficient[0] / p.coefficient[1]); }
 		if (p.coefficient.size() == 3) {
-			real part1 = pow(p.coefficient[1], 2) - (4 * p.coefficient[0] * p.coefficient[2]);
+			real part1 = std::pow(p.coefficient[1], 2) - (4 * p.coefficient[0] * p.coefficient[2]);
 			if (part1 >= 0) { return ((-p.coefficient[1] + sqrt(part1)) / (2 * p.coefficient[2])); }
 			else { return 0; }
 		}
@@ -690,7 +723,7 @@ namespace MathParser
 		if (p.coefficient.size() <= 1) { return 0; }
 		if (p.coefficient.size() == 2) { return (-p.coefficient[0] / p.coefficient[1]); }
 		if (p.coefficient.size() == 3) {
-			real part1 = pow(p.coefficient[1], 2) - (4 * p.coefficient[0] * p.coefficient[2]);
+			real part1 = std::pow(p.coefficient[1], 2) - (4 * p.coefficient[0] * p.coefficient[2]);
 			if (part1 >= 0) { return ((-p.coefficient[1] + sqrt(part1)) / (2 * p.coefficient[2])); }
 			else { return 0; }
 		}
@@ -797,6 +830,9 @@ namespace MathParser
 	}
 
 	std::vector<real> Polynomial::findRealRoots() {
+		// Get a copy of the coefficients array, which must be reversed
+		// to be in a sensible order for the root-finding algorithm
+		// (ie least to greatest exponent).
 		Polynomial p(coefficient);
 
 		std::vector<real> candidates;
@@ -806,7 +842,7 @@ namespace MathParser
 			return candidates;
 		}
 		if (p.coefficient.size() == 3) {
-			real part2 = pow(p.coefficient[1], 2) - (4 * p.coefficient[0] * p.coefficient[2]);
+			real part2 = std::pow(p.coefficient[1], 2) - (4 * p.coefficient[0] * p.coefficient[2]);
 			if (part2 >= 0) {
 				real part1 = (-p.coefficient[1]) / (2 * p.coefficient[2]);
 				part2 = sqrt(part2) / (2 * p.coefficient[2]);
@@ -874,8 +910,13 @@ namespace MathParser
 	}
 	
 
-	std::vector<complex> Polynomial::roots() {
+	std::vector<complex> Polynomial::roots() 
+	{
+		// Get a copy of the coefficients array, which must be reversed
+		// to be in a sensible order for the root-finding algorithm
+		// (ie least to greatest exponent).
 		Polynomial p(coefficient);
+		std::reverse(p.coefficient.begin(), p.coefficient.end());
 
 		std::vector<real> realroots = p.findRealRoots();
 		std::vector<complex> complexRoots;
@@ -899,7 +940,7 @@ namespace MathParser
 		if (p.coefficient.size() < 3) { return complexRoots; }
 
 		if (p.coefficient.size() == 3) {
-			real part2 = pow(p.coefficient[1], 2) - (4 * p.coefficient[0] * p.coefficient[2]);
+			real part2 = std::pow(p.coefficient[1], 2) - (4 * p.coefficient[0] * p.coefficient[2]);
 			if (part2 < 0) {
 				part2 = part2 / (2 * p.coefficient[2]);
 				real part1 = (-p.coefficient[1] / (2 * p.coefficient[2]));
@@ -909,14 +950,15 @@ namespace MathParser
 			return complexRoots;
 		}
 
-		if (p.coefficient.size() > 3) {
-
+		if (p.coefficient.size() > 3) 
+		{
 			//start finding roots with Durand-Kerner method
 			int iterations = 10000;
 			complex z = complex(lowbound, lowboundC);
 			int size = sizeof(z);
 			std::vector<complex> R;
-			for (int i = 0; i < p.coefficient.size(); i++) { R.push_back(std::pow(z,i)); }
+			for (int i = 0; i < p.coefficient.size(); i++) 
+				R.push_back(std::pow(z,i));
 
 			for (int i = 0; i < iterations; i++) {
 				for (int j = 0; j < p.coefficient.size(); j++) {
@@ -954,4 +996,146 @@ namespace MathParser
 		}
 		return complexRoots;
 	}
+
+	Polynomial Polynomial::add(Polynomial a, Polynomial b) 
+	{
+		int new_length = a.coefficient.size() > b.coefficient.size() ?
+			a.coefficient.size() : b.coefficient.size();
+		int shorter_length = (new_length == a.coefficient.size()) ?
+			b.coefficient.size() : a.coefficient.size();
+		std::vector<real> coef1;
+		coef1.resize(new_length, 0);
+		for (int i = 0; i < new_length; i++) 
+		{
+			if (i < shorter_length) 
+				coef1[i] = a.coefficient[i] + b.coefficient[i];
+			else 
+			{
+				if (b.coefficient.size() > a.coefficient.size()) 
+				{ 
+					coef1[i] = b.coefficient[i]; 
+				}
+				else 
+				{ 
+					coef1[i] = a.coefficient[i]; 
+				}
+			}
+		}
+		return Polynomial(coef1);
+	}
+
+	Polynomial Polynomial::add(Polynomial a, real  b) 
+	{
+		std::vector<real> coef1 = coefficient;
+		coef1[coef1.size()-1] += b;
+		return Polynomial(coef1);
+	}
+
+	Polynomial Polynomial::add(real b, Polynomial a) 
+	{
+		std::vector<real> coef1 = coefficient;
+		coef1[coef1.size() - 1] += b;
+		return Polynomial(coef1);
+	}
+
+	Polynomial Polynomial::subtract(Polynomial a, Polynomial b) 
+	{		
+		return a + (-1.0 * b);
+	}
+
+	Polynomial Polynomial::subtract(Polynomial a, real  b) 
+	{
+		std::vector<real> coef1 = coefficient;
+		coef1[coef1.size() - 1] -= b;
+		return Polynomial(coef1);
+	}
+
+	Polynomial Polynomial::subtract(real b, Polynomial a) 
+	{
+		std::vector<real> coef1 = coefficient;
+		for (int i = 0; i < coef1.size(); ++i)
+			coef1[i] *= -1.0;
+		coef1[coef1.size() - 1] += b;
+		return Polynomial(coef1);
+	}
+
+	Polynomial Polynomial::multiply(Polynomial a, Polynomial b) 
+	{
+		int new_length = a.coefficient.size() + b.coefficient.size();
+		std::vector<real> coef1;
+		coef1.resize(new_length, 0);
+		for (int i = 0; i < a.coefficient.size(); i++) {
+			for (int j = 0; j < b.coefficient.size(); j++) {
+				int index = i + j;
+				coef1[index] += a.coefficient[i] * b.coefficient[j];
+			}
+		}
+
+		// Remove invalid values from the end of the array.
+		while (!coef1[coef1.size() - 1])
+			coef1.erase(coef1.begin() + coef1.size()-1);
+
+		return Polynomial(coef1);
+	}
+
+	Polynomial Polynomial::multiply(Polynomial a, real b) 
+	{
+		std::vector<real> v = a.coefficient;
+		for (int i = 0; i < v.size(); ++i)
+			v[i] *= b;
+		return Polynomial(v);
+	}
+
+	Polynomial Polynomial::multiply(real b, Polynomial a) 
+	{
+		std::vector<real> v = a.coefficient;
+		for (int i = 0; i < v.size(); ++i)
+			v[i] *= b;
+		return Polynomial(v);
+	}
+
+	Polynomial Polynomial::divide(Polynomial p, Polynomial q) 
+	{//factors out a binomial by synthetic division
+		real n = q.coefficient[0];
+		if (q.coefficient.size() > 2)
+			return Polynomial();
+		std::vector<real> vec;
+		vec.resize(p.coefficient.size() - 1);
+		vec[this->coefficient.size() - 2] = 
+			p.coefficient[this->coefficient.size() - 1];
+		for (int i = p.coefficient.size() - 2; i > 0; --i) 
+		{
+			vec[i - 1] = p.coefficient[i] - (vec[i] * n);
+		}
+		if (p.coefficient[0] - (vec[0] * n) != 0)
+			return Polynomial();
+		return Polynomial(vec);
+	}
+
+	Polynomial Polynomial::divide(Polynomial p2, real q) 
+	{
+		return p2 * (1.0 / q);
+	}
+
+	//Overloaded operators:
+	Polynomial& Polynomial::operator*=(Polynomial& rhs) { *this = multiply(*this, rhs); return *this; }
+	Polynomial& Polynomial::operator*=(real x) { *this = multiply(*this, x); return *this; }
+	Polynomial& Polynomial::operator/=(Polynomial& rhs) { *this = divide(*this, rhs); return *this; }
+	Polynomial& Polynomial::operator/=(real x) { *this = divide(*this, x); return *this; }
+	Polynomial& Polynomial::operator+=(Polynomial& rhs) { *this = add(*this, rhs); return *this; }
+	Polynomial& Polynomial::operator+=(real x) { *this = add(*this, x); return *this; }
+	Polynomial& Polynomial::operator-=(Polynomial& rhs) { *this = subtract(*this, rhs); return *this; }
+	Polynomial& Polynomial::operator-=(real x) { *this = subtract(*this, x); return *this; }
+	Polynomial operator+(Polynomial& lhs, Polynomial rhs) { return lhs.add(lhs, rhs); }
+	Polynomial operator+(Polynomial& lhs, real x) { return lhs.add(lhs, x); }
+	Polynomial operator+(real x, Polynomial& rhs) { return rhs.add(x, rhs); }
+	Polynomial operator-(Polynomial& lhs, Polynomial rhs) { return lhs.subtract(lhs, rhs); }
+	Polynomial operator-(Polynomial& lhs, real x) { return lhs.subtract(lhs, x); }
+	Polynomial operator-(real x, Polynomial& rhs) { return rhs.subtract(x, rhs); }
+	Polynomial operator*(Polynomial& lhs, Polynomial rhs) { return lhs.multiply(lhs, rhs); }
+	Polynomial operator*(Polynomial& lhs, real x) { return lhs.multiply(lhs, x); }
+	Polynomial operator*(real x, Polynomial& rhs) { return rhs.multiply(x, rhs); }
+	Polynomial operator/(Polynomial& lhs, Polynomial rhs) { return lhs.divide(lhs, rhs); }
+	Polynomial operator/(Polynomial& lhs, real x) { return lhs.divide(lhs, x); }
+	//Polynomial operator/(real x, Polynomial& rhs) { return rhs.divide(x, rhs); }
 }

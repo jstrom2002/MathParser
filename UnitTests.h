@@ -19,7 +19,9 @@ namespace MathParser
 		bool getNearestRealTest();
 		bool parseNInputNumbersTest();
 		bool parserTest();
+		bool polynomialArithmeticTest();
 		bool processTwoTermOperationTest();
 		bool replaceStringTest();
+		bool rootTest();
 	};
 }

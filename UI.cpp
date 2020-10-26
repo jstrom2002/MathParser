@@ -1,5 +1,6 @@
 #include "UI.h"
 #include "Parsing.h"
+#include "UnitTests.h"
 #include <string>
 #include <iostream>
 
@@ -37,6 +38,11 @@ namespace MathParser
 			parser.clear();
 		else if (!strcmp(inputText, "help"))
 			printHelp();
+		else if (!strcmp(inputText, "test"))
+		{
+			UnitTests tests;
+			tests.runAll();
+		}
 		else if (std::string(inputText).find("precision") != std::string::npos)
 		{
 			std::string str(inputText);
@@ -59,13 +65,14 @@ namespace MathParser
 		std::cout << "clear" << std::endl;
 		std::cout << "exit" << std::endl;
 		std::cout << "help" << std::endl;
+		std::cout << "test" << std::endl;
 		std::cout << std::endl;
 
-		std::cout << "To use last entered value in an expression, type 'LAST'. For example,"
-			"a user could type 'LAST + 2'" << std::endl;
+		std::cout << "To use last entered value in an expression, type 'LAST'." << std::endl;
+		std::cout << "For example, a user could type 'LAST + 2'" << std::endl;
 		std::cout << "To change precision, type 'precision = n'" << std::endl;
-		std::cout << "To decalare a function, type 'f(x,y,..) = [equation terms]'" << std::endl;
-		std::cout << "To decalare a polynomial, type 'p(x) = [polynomial terms like 'x^2 + x']'" << std::endl;
+		std::cout << "To declare a function, type 'f(x,y,..) = [equation terms]'" << std::endl;
+		std::cout << "To declare a polynomial, type 'p(x) = [polynomial terms like 'x^2 + x']'" << std::endl;
 		std::cout << "To reference a saved mathematical object (like a function), use the first letter of the"
 			"object's name, followed by the index number. For example, to evaluate function 1 at x = 2.3, type"
 			"f1.evaluate(2.3)" << std::endl;
@@ -73,13 +80,17 @@ namespace MathParser
 
 		std::cout << "List of methods for function class: " << std::endl;
 		std::cout << ".evaluate(real)" << std::endl;
+		std::cout << std::endl;
 
+		std::cout << "List of methods for polynomial class: " << std::endl;
+		std::cout << ".evaluate(real)" << std::endl;
+		std::cout << ".realRoots()" << std::endl;
+		std::cout << ".roots()" << std::endl;
 		std::cout << std::endl;
 	}
 
 	void UserInterface::run()
 	{
-		std::cout << "<enter 'exit' to quit program>" << std::endl;
 		std::cout << "<enter 'help' for list of commands>" << std::endl;
 		std::cout << std::endl;	
 
