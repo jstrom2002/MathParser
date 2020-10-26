@@ -1,5 +1,6 @@
 #include "Parsing.h"
 #include "StringUtils.h"
+#include "ComplexNumber.h"
 #include "MathLib.h"
 #include <iostream>
 #include <string>
@@ -230,16 +231,16 @@ namespace MathParser
 		return std::stod(in); 
 	}
 
-	std::vector<complex> ParseNComplexNumbers(std::string str) {
+	std::vector<ComplexNumber> ParseNComplexNumbers(std::string str) {
 		str = removeSpaces(str);
-		std::vector<complex> answer;
+		std::vector<ComplexNumber> answer;
 		std::vector<std::string> strs = tokenize(str, ",");
 		for (int i = 0; i < strs.size(); ++i) {
 			if (findComplexNumber(strs[i]) != std::string::npos) {
 				answer.push_back(ParseComplexNumber(strs[i]));
 			}
 			else if (findNearestReal(strs[i]) != std::string::npos) {
-				answer.push_back(complex(ParseInputNumber(strs[i])));
+				answer.push_back(ComplexNumber(ParseInputNumber(strs[i])));
 			}
 		}
 		return answer;
@@ -415,7 +416,7 @@ namespace MathParser
 	std::string convertRealToComplexNumber(std::string str, int start, int end) 
 	{
 		std::string replacer = "(";
-		complex z = complex(ParseInputNumber(str.substr(start, end - start)));
+		ComplexNumber z = ComplexNumber(ParseInputNumber(str.substr(start, end - start)));
 		replacer.append(to_string_precision(z, 4));
 		replacer.append(")");
 		str.erase(start, end - start);
@@ -486,7 +487,7 @@ namespace MathParser
 	}
 
 	std::string processTwoTermOperationComplex(std::string funct, std::string tempstr) {
-		complex x = calculateArithmeticComplex(tempstr);
+		ComplexNumber x = calculateArithmeticComplex(tempstr);
 		std::string replc = ("(");
 		replc.append(to_string_precision(x, 4));
 		replc.append(")");
@@ -606,16 +607,16 @@ namespace MathParser
 		return expression;
 	}
 
-	complex calculateArithmeticComplex(std::string funct) {
+	ComplexNumber calculateArithmeticComplex(std::string funct) {
 		int start = 0;
 		int end = 0;
-		std::vector<complex> dbls;
+		std::vector<ComplexNumber> dbls;
 		std::vector<char> ops;
 
 		//load all complex numbers into the array
 		while (findComplexNumber(funct) >= 0) {
 			std::string cpnum = getNearestComplexNumber(funct);
-			dbls.push_back(complex(ParseComplexNumber(cpnum)));
+			dbls.push_back(ComplexNumber(ParseComplexNumber(cpnum)));
 			funct.erase(findComplexNumber(funct), cpnum.size());
 		}
 		if (dbls.size() == 1) { return dbls[0]; }
@@ -635,7 +636,7 @@ namespace MathParser
 		//if operator vector is empty, there are no operators, only a value to return
 		if (ops.size() == 0) { return ParseComplexNumber(funct); }
 
-		complex answer(0);
+		ComplexNumber answer(0);
 		int pass = 0;
 
 		//evaluate in PEMDMAS order, 6 passes through the vector, eliminating evaluated terms and operators as you go
@@ -643,8 +644,8 @@ namespace MathParser
 
 			for (int i = 0; i < ops.size(); ++i) {
 				//note: format = 'a+b'
-				complex a = dbls[i];
-				complex b = dbls[i + 1];
+				ComplexNumber a = dbls[i];
+				ComplexNumber b = dbls[i + 1];
 				if (i >= 0 && ops[i] == '+' && pass == 4) {
 					answer = a + b;
 					dbls[i + 1] = answer;
@@ -667,19 +668,17 @@ namespace MathParser
 					--i;
 				}
 				if (i >= 0 && ops[i] == '/' && pass == 2) {
-					if (b == complex(0)) {
-						return (complex());
-					}
-					else {
-						answer = a / b;
-					}
+					if (b == ComplexNumber(0)) 					
+						return (ComplexNumber());					
+					else 
+						answer = a / b;					
 					dbls[i + 1] = answer;
 					dbls.erase(dbls.begin() + i);
 					ops.erase(ops.begin() + i);
 					--i;
 				}
 				if (i >= 0 && ops[i] == '^' && pass == 0) {
-					answer = pow(a, b);
+					answer = std::pow(a, b);
 					dbls[i + 1] = answer;
 					dbls.erase(dbls.begin() + i);
 					ops.erase(ops.begin() + i);
@@ -842,10 +841,10 @@ namespace MathParser
 	}
 
 
-	complex ParseComplexNumber(std::string in) {
+	ComplexNumber ParseComplexNumber(std::string in) {
 		//if the input string is only real-valued and not complex, evaluate it as a real number
 		if (in.find('i') == std::string::npos) {
-			return complex(ParseInputNumber(in), 0);
+			return ComplexNumber(ParseInputNumber(in), 0);
 		}
 
 		//else if it is complex...
@@ -858,7 +857,7 @@ namespace MathParser
 			if (in.find("+") == false && in.find("-") == false) {//case: '3i' is the number
 				in = replaceChar(in, 'i', ' ');
 				in.append(")");
-				return complex(0, ParseInputNumber(in));
+				return ComplexNumber(0, ParseInputNumber(in));
 			}
 		}
 
@@ -873,7 +872,7 @@ namespace MathParser
 		in.append(")");
 		std::vector<real> temp = ParseNInputNumbers(in);
 		if (temp.size() == 1) 
-			return complex(temp[0], 0);
-		return complex(temp[0], temp[1]);
+			return ComplexNumber(temp[0], 0);
+		return ComplexNumber(temp[0], temp[1]);
 	}
 }

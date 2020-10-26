@@ -6,8 +6,18 @@
 #include "Types.h"
 #include <vector>
 
+#ifndef PI
+#define PI 3.14159265359
+#endif
+
 namespace MathParser
 {
+	class ComplexNumber;
+	class Matrix;
+	class Polynomial;
+	class Vector;
+
+	int getLength(real x);
 	int getMantissaLength(real x);
 	highpUint numberOfDivisors(highpUint n);
 	std::vector<highpUint> divisors(highpUint n);
@@ -36,7 +46,9 @@ namespace MathParser
 	real risingFactorial(real n, real r);
 	real digamma(real z);
 	real gamma(real z);
-	real lowerIncompleteGamma(real s, real x);
+	real incompleteBetaFunction(real x, real a, real b, real epsilon=0.000001);
+	real regularizedIncompleteBetaFunction(real x, real a, real b, real epsilon=0.000001);
+	real lowerIncompleteGamma(real s, real x, int terms = 30);
 	real upperIncompleteGamma(real s, real x);
 	real regularizedGamma(real s, real x);
 	real logit(real x);

@@ -9,6 +9,8 @@
 
 namespace MathParser
 {
+	class ComplexNumber;
+
 	bool isOperator(char c);
 	bool isOperatorNotParen(char c);
 	char randomChar();
@@ -27,7 +29,7 @@ namespace MathParser
 	std::string removeSpaces(std::string str);
 	std::string reverseString(std::string str);
 	std::string to_string_precision(real val, unsigned int precisn);
-	std::string to_string_precision(complex val, unsigned int precisn);
+	std::string to_string_precision(ComplexNumber val, unsigned int precisn);
 	std::string toHex(int val);
 	std::vector<std::string> tokenize(std::string toTokenize, std::string token);
 	std::string trim(std::string str);

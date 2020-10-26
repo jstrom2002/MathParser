@@ -1,6 +1,7 @@
 #include "MathParser.h"
 #include "StringUtils.h"
 #include "Polynomial.h"
+#include "ComplexNumber.h"
 #include "Function.h"
 #include "Parsing.h"
 #include "StringUtils.h"
@@ -59,7 +60,7 @@ namespace MathParser
 		}
 		else if (str.find("roots()") != std::string::npos)
 		{
-			std::vector<complex> vals = savedPolynomials[idx].roots();
+			std::vector<ComplexNumber> vals = savedPolynomials[idx].roots();
 			std::string outputStr = "roots: ";
 			for (int i = 0; i < vals.size(); ++i)
 			{

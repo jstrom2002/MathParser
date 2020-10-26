@@ -14,6 +14,6 @@ namespace MathParser
 	public:
 		
 		virtual std::string to_string(int precision = 4) = 0;
-		virtual real evaluate(real x, int precision = 4) = 0;
+		virtual real evaluate(real x, int precision = 4) { return 0; };
 	};
 }

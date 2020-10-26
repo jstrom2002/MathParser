@@ -1,10 +1,12 @@
 #include "MathLib.h"
 #include "StringUtils.h"
+#include "ComplexNumber.h"
+#include "Matrix.h"
+#include "Vector.h"
+#include "Function.h"
+#include "Calculus.h"
 #include <cmath>
-
-#ifndef PI
-#define PI 3.14159265359
-#endif
+#include <algorithm>
 
 namespace MathParser
 {
@@ -13,6 +15,17 @@ namespace MathParser
 		if (x == 0) { return 0; }
 		if (x < 0) { return -1; }
 		return 1;
+	}
+
+	int getLength(real x) {//get the number of digits in a real
+		real n = abs(x);
+		int length = 0;
+		if (n < 1) { return 0; }
+		while (n > 1) {
+			n /= 10;
+			++length;
+		}
+		return length;
 	}
 
 	int getMantissaLength(real x) 
@@ -1034,12 +1047,23 @@ namespace MathParser
 		return 0;
 	}
 
-	real lowerIncompleteGamma(real s, real x)
+	real incompleteBetaFunction(real x, real a, real b, real epsilon)
+	{ 
+		real numerator = 0;
+		for (real i = 0; i < x; i += epsilon)
+			numerator += pow(i, a - 1) * pow(1 - i, b - 1);
+		return numerator * epsilon;		
+	}
+
+	real regularizedIncompleteBetaFunction(real x, real a, real b, real epsilon)
+	{
+		return incompleteBetaFunction(x,a,b,epsilon) / std::beta(a, b);
+	}
+
+	real lowerIncompleteGamma(real s, real x, int terms)
 	{
 		real answer = 0;
-		//approximate this series to 30 terms.
-		int terms_to_approximate = 30;
-		for (int i = 0; i < terms_to_approximate; ++i)
+		for (int i = 0; i < terms; ++i)// Approximate this series to N terms.
 			answer += (pow(x, i) / tgamma(s + i + 1));
 		return pow(x, s) * tgamma(s) * exp(-x) * answer;
 	}

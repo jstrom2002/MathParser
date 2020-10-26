@@ -1,5 +1,7 @@
 ﻿#include "Polynomial.h"
 #include "StringUtils.h"
+#include "ComplexNumber.h"
+#include "Vector.h"
 #include "MathLib.h"
 #include <limits>
 #include <ctime>
@@ -39,19 +41,19 @@ namespace MathParser
 		coefficient = coef;
 	}
 
-	int Polynomial::getLength(real x)
+	Polynomial::Polynomial(Vector v)
 	{
-		real n = abs(x);
-		int length = 0;
-		if (n < 1)
-			return 0;
-		while (n > 1)
+		// Remove any unnecessary coefficients.
+		while (v[0] == 0)
 		{
-			n /= 10;
-			++length;
+			v.erase(v.begin());
 		}
-		return length;
+
+		coefficient.resize(v.size(), 0);
+		for (int i = 0; i < v.size(); ++i)
+			coefficient[i] = v[i];
 	}
+
 
 	void Polynomial::randomize() 
 	{
@@ -81,11 +83,12 @@ namespace MathParser
 		return result;
 	}
 
-	complex Polynomial::evaluate(complex z) 
+	ComplexNumber Polynomial::evaluate(ComplexNumber z)
 	{
 		std::vector<real> v = coefficient;
-		complex s(0, 0);
-		for (std::vector<real>::const_reverse_iterator i = v.rbegin(); i != v.rend(); i++)
+		ComplexNumber s(0, 0);
+		for (std::vector<real>::const_reverse_iterator i = v.rbegin(); 
+			i != v.rend(); i++)
 			s = (s * z) + *i;		
 		return s;
 	}
@@ -226,13 +229,15 @@ namespace MathParser
 		return syntheticDivision(cof);
 	}
 
-	complex Polynomial::complexSyntheticDivision(complex z) {//factors out a binomial by synthetic division where binomial p = (x + ...) and returns the remainder
+	ComplexNumber Polynomial::complexSyntheticDivision(ComplexNumber z) 
+	{
 		int counter = 0;
-		complex remainder;
-		std::vector<complex> vec;
+		ComplexNumber remainder;
+		std::vector<ComplexNumber> vec;
 		vec.resize(coefficient.size() - 1);
 
-		vec[coefficient.size() - 2] = complex(coefficient[coefficient.size() - 1], 0);//drop down first coefficient of synth div
+		//drop down first coefficient of synth div
+		vec[coefficient.size() - 2] = ComplexNumber(coefficient[coefficient.size() - 1], 0);
 		for (int i = coefficient.size() - 2; i >= 0; --i) {
 			if (i == 0) 
 				remainder = coefficient[i] + (z * vec[i]);
@@ -247,8 +252,7 @@ namespace MathParser
 		real n = p.coefficient[0]; //get n from the input binomial (x + n)
 		if (p.coefficient.size() > 2) { return 0; }//can't factor out larger polynomials
 
-									   //synthetic division
-									   //==================
+	   //synthetic division
 		real * vec = NULL;
 		int counter = 0;
 		real remainder;
@@ -886,10 +890,11 @@ namespace MathParser
 		return candidates;
 	}
 
-	complex Polynomial::NewtonsMethodComplex(Polynomial p, complex z) {
+	ComplexNumber Polynomial::NewtonsMethodComplex(Polynomial p, ComplexNumber z) 
+	{
 		//use root as guess for Newton's method now
-		complex x, x1; //user input value
-		complex f, dfdx; //function and its derivative 
+		ComplexNumber x, x1; //user input value
+		ComplexNumber f, dfdx; //function and its derivative 
 		const real epsilon = 0.00000001; //tolerance
 		const int n = 1000; //# steps
 		Polynomial deriv = p.derivative();//derivative of polynomial
@@ -903,14 +908,19 @@ namespace MathParser
 			x1 = x - (f / dfdx); //Newton Method formula = x1 = x - f/dfdx
 		}
 
-		if (x.imag() != 0 && (x - x1).real() < epsilon && (x - x1).imag() < epsilon) { //checks if guesses are within a certain tolerance value AND complex (not real)
+		// Checks if guesses are within a certain tolerance value and complex.
+		if (x.im() != 0 && (x - x1).re() < epsilon && 
+			(x - x1).im() < epsilon) 
+		{
 			return x1;
 		}
-		return complex();//if not close enough, return 0 value
+
+		// If not close enough, return 0 value.
+		return ComplexNumber();
 	}
 	
 
-	std::vector<complex> Polynomial::roots() 
+	std::vector<ComplexNumber> Polynomial::roots()
 	{
 		// Get a copy of the coefficients array, which must be reversed
 		// to be in a sensible order for the root-finding algorithm
@@ -919,11 +929,11 @@ namespace MathParser
 		std::reverse(p.coefficient.begin(), p.coefficient.end());
 
 		std::vector<real> realroots = p.findRealRoots();
-		std::vector<complex> complexRoots;
+		std::vector<ComplexNumber> complexRoots;
 		for (int i = 0; i < realroots.size(); ++i)
-			complexRoots.push_back(complex(realroots[i], 0));		
+			complexRoots.push_back(ComplexNumber(realroots[i], 0));
 
-		std::vector<real > bounds = p.getComplexRootBounds();
+		std::vector<real> bounds = p.getComplexRootBounds();
 		real lowbound = bounds[0];
 		real highbound = bounds[1];
 		real lowboundC = bounds[0];
@@ -944,8 +954,8 @@ namespace MathParser
 			if (part2 < 0) {
 				part2 = part2 / (2 * p.coefficient[2]);
 				real part1 = (-p.coefficient[1] / (2 * p.coefficient[2]));
-				complexRoots.push_back(complex(part1, part2));
-				complexRoots.push_back(complex(part1, -part2));
+				complexRoots.push_back(ComplexNumber(part1, part2));
+				complexRoots.push_back(ComplexNumber(part1, -part2));
 			}
 			return complexRoots;
 		}
@@ -954,40 +964,45 @@ namespace MathParser
 		{
 			//start finding roots with Durand-Kerner method
 			int iterations = 10000;
-			complex z = complex(lowbound, lowboundC);
+			ComplexNumber z(lowbound, lowboundC);
 			int size = sizeof(z);
-			std::vector<complex> R;
-			for (int i = 0; i < p.coefficient.size(); i++) 
+			std::vector<ComplexNumber> R;
+			for (int i = 0; i < p.size(); i++) 
 				R.push_back(std::pow(z,i));
 
 			for (int i = 0; i < iterations; i++) {
-				for (int j = 0; j < p.coefficient.size(); j++) {
-					complex B = p.evaluate(R[j]);
-					for (int k = 0; k < p.coefficient.size(); k++) {
-						if (k != j) { B /= (R[j] - R[k]); }
+				for (int j = 0; j < p.size(); j++) {
+					ComplexNumber B = p.evaluate(R[j]);
+					for (int k = 0; k < p.size(); k++) {
+						if (k != j) 
+							B /= (R[j] - R[k]);
 					}
 					R[j] -= B;
 				}
 			}
 
 			for (int i = 0; i < R.size(); ++i) { //now filter out all the bad results
-				if (R[i].imag() != 0) { //only complex roots accepted
+				if (R[i].im() != 0) { //only complex roots accepted
 					R[i] = NewtonsMethodComplex(p, R[i]);
-					complex temp = p.evaluate(R[i]);
-					real a = std::abs(temp.real());
-					real b = std::abs(temp.imag());
+					ComplexNumber temp = p.evaluate(R[i]);
+					real a = std::abs(temp.re());
+					real b = std::abs(temp.im());
 					if (a < 0.1 && b < 0.1) {
-						a = std::abs(R[i].real());
-						b = std::abs(R[i].imag());
+						a = std::abs(R[i].re());
+						b = std::abs(R[i].im());
 						bool isSimilar = false;
-						for (int i = 0; i < complexRoots.size(); ++i) {
-							real x = std::abs(complexRoots[i].real());
-							real y = std::abs(complexRoots[i].imag());
-							if (std::abs(a - x) < 0.001 && std::abs(b - y) < 0.001) { isSimilar = true; }
+						for (int i = 0; i < complexRoots.size(); ++i) 
+						{
+							real x = std::abs(complexRoots[i].re());
+							real y = std::abs(complexRoots[i].im());
+							if (std::abs(a - x) < 0.001 && std::abs(b - y) < 0.001) 
+								isSimilar = true;
 						}
-						if (isSimilar == false) { //if this is indeed a new root, save the root and its conjugate
+
+						//if this is indeed a new root, save the root and its conjugate
+						if (!isSimilar) {
 							complexRoots.push_back(R[i]);
-							complexRoots.push_back(complex(R[i].real(), R[i].imag() * -1));
+							complexRoots.push_back(ComplexNumber(R[i]) * -1.0);
 						}
 					}
 				}

@@ -11,6 +11,11 @@
 
 namespace MathParser
 {
+	class Function;
+	class Polynomial;
+	class Matrix;
+	class Vector;
+
 	class MathParser
 	{
 	public:		

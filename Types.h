@@ -1,6 +1,6 @@
 /**
-*	Header for basic types for real-valued numbers. By default, this program uses float precision,
-*	but users can change data types easily here.
+*	Header for basic types for real-valued numbers. By default, this program uses float 
+*	precision, but users can change data types easily here.
 */
 
 #pragma once
@@ -26,8 +26,7 @@ namespace MathParser
 {
 	// Define precision of real/complex numbers, change to 'double' type as necessary.
 	typedef float real;
-	typedef std::complex<real> complex;
-
+\
 	// Define high precision reals as max possible precision value.
 	typedef long double highp;
 

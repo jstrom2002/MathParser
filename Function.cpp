@@ -1,10 +1,16 @@
 #include "Function.h"
 #include "StringUtils.h"
 #include "Parsing.h"
+#include "Vector.h"
 #include "MathLib.h"
 
 namespace MathParser
 {
+	Function::Function(const char* str)
+	{
+		*this = Function(std::string(str));
+	}
+
 	Function::Function(std::string str) {		//input of format f(x,y,w,z...) = x*3 + exp(-3*y*z) - ...
 		if (str.find("=") != std::string::npos) {	//case:  string is 'f(x) = 2*x + exp(-y)'
 			while (str[0] != '(') { str = str.substr(1); }//clip off everything leading up to the variable definition
@@ -395,13 +401,12 @@ namespace MathParser
 			return std::riemann_zeta(tmp);
 		}
 
-		return 0;	//else, if none of the other functions match, return NULL
+		return 0;//else, if none of the other functions match, return NULL
 	}
 
 	real Function::evaluate(std::vector<real> vals, int precision) {
-		/*	NOTE:
-		Suitable arithmetic operators are +,-,*,/,^.  Suitable functions are found in evalFunction method.
-		This function will properly evaluate a function of the form f(x,y) = x^2 without error.		*/
+		/*	NOTE: Suitable arithmetic operators are +,-,*,/,^.  
+		Suitable functions are found in evalFunction method.
 
 		/*=================
 		|DECLARE VARIABLES|
@@ -520,13 +525,17 @@ namespace MathParser
 		real answer = calculateArithmetic(funct);//calculate arithmetic of the last few values
 		precision = prcs; //finally, restore precision and return a value
 		return answer; //note: if unsuccessful, will return 0
-	}//END EVALUATE FUNCTION================================================
-
-	real Function::evaluate(real x, int precision) {
-		std::vector<real> vals;
-		vals.push_back(x);
-		real n = evaluate(vals,precision);
-		return n;
 	}
 
+	real Function::evaluate(real x, int precision) 
+	{
+		std::vector<real> vals;
+		vals.push_back(x);
+		return evaluate(vals,precision);
+	}
+
+	real Function::evaluate(Vector vals, int precision)
+	{
+		return evaluate(*vals.get(), precision);
+	}
 }

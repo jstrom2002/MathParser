@@ -68,6 +68,11 @@ namespace MathParser
 		std::cout << "test" << std::endl;
 		std::cout << std::endl;
 
+		std::cout << "List of user-defined functions:" << std::endl;
+		for (int i = 0; i < functionList.size(); ++i)
+			std::cout << functionList[i] << std::endl;
+		std::cout << std::endl;
+
 		std::cout << "To use last entered value in an expression, type 'LAST'." << std::endl;
 		std::cout << "For example, a user could type 'LAST + 2'" << std::endl;
 		std::cout << "To change precision, type 'precision = n'" << std::endl;

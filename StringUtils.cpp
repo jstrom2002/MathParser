@@ -1,6 +1,6 @@
 ﻿#pragma once
 #include "StringUtils.h"
-#include "Types.h"
+#include "ComplexNumber.h"
 #include <sstream>
 #include <iomanip>
 #include <algorithm>
@@ -116,28 +116,28 @@ namespace MathParser
 		return out.str();
 	}
 
-	std::string to_string_precision(complex z, unsigned int precision) 
+	std::string to_string_precision(ComplexNumber z, unsigned int precision)
 	{
 		std::string answer;
 		std::ostringstream strs;
 		int prc = precision;
-		if (z.real() == std::floor(z.real()))
+		if (z.re() == std::floor(z.re()))
 			prc = 0;
-		strs << std::fixed << std::setprecision(prc) << z.real();
+		strs << std::fixed << std::setprecision(prc) << z.re();
 		answer.append(strs.str());
 		prc = precision;
-		if (z.imag() == floor(z.imag()))
+		if (z.im() == floor(z.im()))
 			prc = 0;
-		if (z.imag() != 0) {
-			if (z.imag() < 0) {
+		if (z.im() != 0) {
+			if (z.im() < 0) {
 				answer.append("-");
 			}
 			else {
 				answer.append("+");
 			}
-			if (std::abs(z.imag()) != 1) {
+			if (std::abs(z.im()) != 1) {
 				std::ostringstream strs2;
-				strs2 << std::fixed << std::setprecision(prc) << std::abs(z.imag());
+				strs2 << std::fixed << std::setprecision(prc) << std::abs(z.im());
 				answer.append(strs2.str());
 			}
 			answer.append("i");
@@ -147,9 +147,9 @@ namespace MathParser
 
 	std::string toHex(int val) {
 		std::stringstream stream;
-		stream << L"0x";
+		stream << "0x";
 		if (val < 16) {
-			stream << L"0";
+			stream << "0";
 		}
 		stream << std::hex << std::uppercase << val;
 		return stream.str();

@@ -9,6 +9,8 @@
 
 namespace MathParser
 {
+	class ComplexNumber;
+
 	// TESTS FOR USER-DEFINED FUNCTIONS:
 	// List of all user-defined function name strings recognized by the 'evaluate()' 
 	// function of the 'Function' class. This allows users to define parsing methods for
@@ -58,16 +60,16 @@ namespace MathParser
 	std::vector<std::string> loadExpressionsIntoArray(std::string str);
 
 	// GENERAL FUNCTIONS TO CONVERT STRINGS OF ARITHMETIC STATEMENTS TO NUMBERS:
-	complex calculateArithmeticComplex(std::string funct);
+	ComplexNumber calculateArithmeticComplex(std::string funct);
 	real calculateArithmetic(std::string funct);
 
 	// FUNCTIONS FOR PARSING NUMBERS:
 	// Wrapper functions around C++'s string to real parsing functions, ie 'std::stod(),'
 	// to format input and prevent exceptions.
 	real ParseInputNumber(std::string in);
-	complex ParseComplexNumber(std::string in);
+	ComplexNumber ParseComplexNumber(std::string in);
 
 	// Parses a comma-delimited array of real/complex numbers.
 	std::vector<real> ParseNInputNumbers(std::string str);	
-	std::vector<complex> ParseNComplexNumbers(std::string str);
+	std::vector<ComplexNumber> ParseNComplexNumbers(std::string str);
 }
