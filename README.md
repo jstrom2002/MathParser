@@ -11,4 +11,4 @@ https://arxiv.org/abs/1907.12373
 
 Menz, Petra Margarete. "An Algorithm for Computing the Riemann Zeta Function Based on an Analysis of Backlund's Remainder Estimate." University of British Columbia, 1994. https://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.561.1344&rep=rep1&type=pdf
 
-Notaris, Sotirios E. "Gauss-Kronrod quadrature formulae --a survey of fifty years of research." Electronic Transactions on Numerical Analysis, vol. 45, 2016, p. 371+. Accessed 27 Oct. 2020. https://www.google.com/url?sa=t&rct=j&q=&esrc=s&source=web&cd=&ved=2ahUKEwiRmdTxiNTsAhWtJzQIHWSNBugQFjADegQIBxAC&url=http%3A%2F%2Fetna.mcs.kent.edu%2Fvol.45.2016%2Fpp371-404.dir%2Fpp371-404.pdf&usg=AOvVaw22QITEMxmQelhR_kKooAe5
+Notaris, Sotirios E. "Gauss-Kronrod quadrature formulae --a survey of fifty years of research." Electronic Transactions on Numerical Analysis, vol. 45, 2016, p. 371+. Accessed 27 Oct. 2020. http://etna.mcs.kent.edu/volumes/2011-2020/vol45/abstract.php?vol=45&pages=371-404
