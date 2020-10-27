@@ -10,9 +10,29 @@
 
 namespace std
 {
-	MathParser::Matrix pow(MathParser::Matrix m, MathParser::real x) 
-	{ 
-		return m.exponent(m, x); 
+	MathParser::Matrix pow(MathParser::Matrix A, int b)
+	{
+		if (b != floor(b))
+			return MathParser::Matrix();
+
+		if (b < 0) {
+			A = A.inverse();
+			b = abs(b);
+		}
+		if (b == 0)
+		{
+			MathParser::Matrix A2(A.rows, A.columns);
+			A2.identity();
+			return A2;
+		}
+
+		MathParser::Matrix A2 = A;
+		for (int i = 1; i < b; ++i)
+		{
+			A2 *= A;
+		}
+
+		return A2;
 	}
 }
 
@@ -54,8 +74,14 @@ namespace MathParser
 		columns = col;
 	}
 
-	template <class T>
-	Matrix::Matrix(int row, int col, std::vector<T> element2) 
+	Matrix::Matrix(Vector v)
+	{
+		element.resize(v.size() * v.size(), 0);
+		for (int i = 0; i < v.size(); ++i)
+			set(i, i, v[i]);
+	}
+
+	Matrix::Matrix(int row, int col, std::vector<real> element2) 
 	{
 		int n = row;
 		int m = col;
@@ -72,8 +98,6 @@ namespace MathParser
 		rows = row; 
 		columns = col;
 	}
-	template Matrix::Matrix(int row, int col, std::vector<real> element2);
-	template Matrix::Matrix(int row, int col, std::vector<unsigned char> element2);
 
 	Matrix::Matrix(std::vector<Vector> elm) 
 	{
@@ -150,113 +174,6 @@ namespace MathParser
 			vals.push_back(get(i, i));
 		}
 		return vals;
-	}
-
-	Matrix Matrix::multiply(Matrix A, Matrix B) 
-	{
-		int size = A.rows * B.columns;
-		Vector answerN(size);
-		if (B.columns == 1) 
-		{
-			for (int i = 0; i < A.rows; ++i) {
-				for (int j = 0; j < A.columns; ++j) {
-					answerN[i] += A.get(i, j) * B.get(j, 0);
-				}
-			}
-			return Matrix(A.rows, B.columns, answerN);
-		}
-
-		for (int i = 0; i < A.rows; ++i) 
-		{
-			for (int j = 0; j < B.columns; ++j) 
-			{
-				for (int k = 0; k < A.columns; ++k) 
-				{
-					answerN[(i * B.columns) + j] += A.get(i, k) * B.get(k, j);
-				}
-			}
-		}
-
-		return Matrix(A.rows, B.columns, answerN);
-	}
-
-	Matrix Matrix::multiply(Matrix A, real B) {
-		Vector answerN(size());
-		for (int i = 0; i < A.rows; ++i) 
-		{
-			for (int j = 0; j < A.columns; ++j) 
-			{
-				answerN[(i * A.columns) + j] = A.get(i, j) * B; 				
-			}
-		}
-		return Matrix(A.rows, A.columns, answerN);
-	}
-
-	Matrix Matrix::add(Matrix A, Matrix B) 
-	{
-		if (A.size() != B.size())
-			return Matrix();
-
-		int size = A.rows * A.columns;
-		Vector answerN;
-		answerN.resize(size,0);
-		for (int i = 0; i < A.rows; ++i) 
-		{
-			for (int j = 0; j < B.columns; ++j) 
-			{
-				answerN[(i * A.columns) + j] = A.get(i, j) + B.get(i, j);
-			}
-		}
-		return Matrix(B.rows, A.columns, answerN);
-	}
-
-	Matrix Matrix::add(Matrix A, real B) 
-	{
-		int size = A.rows * A.columns;
-		Vector answerN;
-		answerN.resize(size,0);
-		for (int i = 0; i < A.rows; ++i) 
-		{
-			for (int j = 0; j < A.columns; ++j) 
-			{				
-					answerN[(i * A.columns) + j] = A.get(i, j) + B;				
-			}
-		}
-		return Matrix(A.rows, A.columns, answerN);
-	}
-
-	Matrix Matrix::subtract(Matrix A, Matrix B) 
-	{
-		if (A.size() != B.size())
-			return Matrix();
-		int size = A.rows * A.columns;
-		Vector answerN;
-		answerN.resize(size,0);
-		for (int i = 0; i < size; ++i) { answerN[i] = 0; }
-
-		for (int i = 0; i < A.rows; ++i) 
-		{
-			for (int j = 0; j < B.columns; ++j) 
-			{
-				answerN[(i * A.columns) + j] += A.get(i, j) - B.get(i, j);
-			}
-		}
-		return Matrix(B.rows, A.columns, answerN);
-	}
-
-	Matrix Matrix::subtract(Matrix A, real B) 
-	{
-		int size = A.rows * A.columns;
-		Vector answerN;
-		answerN.resize(size,0);
-		for (int i = 0; i < A.rows; ++i) 
-		{
-			for (int j = 0; j < A.columns; ++j) 
-			{
-				answerN[(i * A.columns) + j] = A.get(i, j) - B;				
-			}
-		}
-		return Matrix(A.rows, A.columns, answerN);
 	}
 
 	Matrix Matrix::inverseExact() 
@@ -373,74 +290,6 @@ namespace MathParser
 			}
 		}
 		return Matrix(rows, columns, Aug.element);
-	}
-
-	Matrix Matrix::exponent(Matrix A, int b) 
-	{
-		if (b != floor(b)) 
-			return Matrix();
-
-		if (b < 0) {
-			A = A.inverse();
-			b = abs(b);
-		}
-		if (b == 0) 
-		{
-			Matrix A2(A.rows, A.columns);
-			A2.identity();
-			return A2;
-		}
-
-		Matrix A2 = A;
-		for (int i = 1; i < b; ++i) 
-		{ 
-			A2 = A2 * A; 
-		}
-
-		return A2;
-	}
-
-	//Overloaded operators:
-	Matrix Matrix::operator*=(Matrix rhs) { *this = multiply(*this, rhs); return*this; }
-	Matrix Matrix::operator*=(real x) { *this = multiply(*this, x); return *this; }
-	Matrix Matrix::operator*(Matrix rhs) { return multiply(*this, rhs); }
-	Matrix Matrix::operator*(real x) { return multiply(*this, x); }
-
-	Matrix Matrix::operator+=(Matrix rhs) { *this = add(*this, rhs); return*this; }
-	Matrix Matrix::operator+=(real x) { *this = add(*this, x); return *this; }
-	Matrix Matrix::operator+(Matrix rhs) { return add(*this, rhs); }
-	Matrix Matrix::operator+(real x) { return add(*this, x); }
-
-	Matrix Matrix::operator-=(Matrix rhs) { *this = subtract(*this, rhs); return*this; }
-	Matrix Matrix::operator-=(real x) { *this = subtract(*this, x); return *this; }
-	Matrix Matrix::operator-(Matrix rhs) { return subtract(*this, rhs); }
-	Matrix Matrix::operator-(real x) { return subtract(*this, x); }
-
-
-	bool Matrix::operator==(Matrix B) 
-	{
-		if (rows != B.rows || columns != B.columns) { return false; }
-		for (int i = 0; i < rows; ++i) {
-			for (int j = 0; j < columns; ++j) {
-				if (get(i, j) != B.get(i, j)) { return false; }
-			}
-		}
-		return true;
-	}
-	
-
-	Matrix Matrix::outerProduct(Matrix A, Matrix B) {//tensore product that creates for every element of Matrix A, a submatrix of B * (A_i_j)
-		if (A.columns != B.rows) { return Matrix(); }
-		Vector ans(A.size() * B.size());
-		int rw = A.rows * B.rows;
-		int cl = A.columns * B.columns;
-
-		for (int i = 0; i < rw; ++i) {
-			for (int j = 0; j < cl; ++j) {
-				ans[i * cl + j] = B.element[((i % B.rows) * B.columns) + (j % B.columns)] * A.element[floor(i / B.rows) * A.columns + floor(j / B.columns)];
-			}
-		}
-		return Matrix(rw, cl, ans);
 	}
 
 	Matrix Matrix::HadamardProduct(Matrix A, Matrix B) {//multiplys two matrices by index so that C(i,j) = A(i,j)*B(i,j)
@@ -807,7 +656,8 @@ namespace MathParser
 	}
 
 	bool Matrix::isSymmetric() {
-		if (*this == transpose()) 
+		Matrix M = transpose();
+		if (*this == M) 
 			return true;
 		return false;
 	}
@@ -994,18 +844,20 @@ namespace MathParser
 		int defaultLength = 4;
 		int largestElement = this->largestElement();
 		bool tf = isIntegerMatrix();
-		if (tf == true) { --defaultLength; }
-		if (tf == false) { ++defaultLength; }
+		if (tf) 
+			--defaultLength;
+		if (!tf) 
+			++defaultLength;
 		for (int i = 0; i < rows; ++i) {
 			for (int j = 0; j < columns; ++j) {
 				s <<
 					std::fixed <<
 					std::left <<
-					std::setw(defaultLength + (precision)+(largestElement)) <<
+					std::setw(defaultLength + (precision) + (largestElement)) <<
 					std::setprecision(precision) <<
 					element[i * columns + j];
 			}
-			s << L"\r\n";
+			s << std::endl;
 		}
 		std::string temp = s.str();
 		s.clear();
@@ -1497,25 +1349,32 @@ namespace MathParser
 		return -1;
 	}
 
-	Matrix Matrix::GaussianElimination() {
+	Matrix Matrix::GaussianElimination() 
+	{
 		int i, j, k;
 		real piv;
 		Matrix m(rows, columns, element);
 		//Gauss-Jordan elimination
-		for (i = 0; i < rows; i++) {
-			if (zeroInDiag() && canSwapOutZeroDiagonals()) { m = m.swapOutZeroDiagonals(); }//remove zeroes in diagonal if possible
+		for (i = 0; i < rows; i++) 
+		{
+			if (zeroInDiag() && canSwapOutZeroDiagonals()) 
+			 //remove zeroes in diagonal if possible
+				m = m.swapOutZeroDiagonals(); 
 			int ind = m.getPivot(i);
 			if (ind >= 0) {
 				piv = m.get(i, ind);
 				//normalize pivot row so pivot = 1
-				if (piv != 1 && piv != 0 && abs(piv) > 0) {
-					for (int l = i; l < rows; ++l) {
+				if (piv != 1 && piv != 0 && abs(piv) > 0) 
+				{
+					for (int l = i; l < rows; ++l) 
+					{
 						m.set(i, l, m.get(i, l) / piv);
 					}
 					m.set(i, i, 1);
 				}
 				//proceed down the column to make each non-pivot value = 0
-				for (j = 0; j < rows; j++) {
+				for (j = 0; j < rows; j++) 
+				{
 					if (m.get(j, i) != 0) {
 						if (j != i) {
 							piv = m.get(j, i);
@@ -1571,7 +1430,8 @@ namespace MathParser
 		Matrix m(rows, columns, element);
 		//Gauss-Jordan elimination
 		for (i = 0; i < rows; i++) {
-			if (zeroInDiag() && canSwapOutZeroDiagonals()) { m = m.swapOutZeroDiagonals(); }//remove zeroes in diagonal if possible
+			if (zeroInDiag() && canSwapOutZeroDiagonals()) 
+				m = m.swapOutZeroDiagonals(); //remove zeroes in diagonal if possible
 			int ind = m.getPivot(i);
 			if (ind >= 0) {
 				piv = m.get(i, ind);
@@ -1610,15 +1470,20 @@ namespace MathParser
 		return rowval;
 	}
 
-	int Matrix::nullity() { return columns - rank(); }
+	int Matrix::nullity() 
+	{ 
+		return columns - rank(); 
+	}
 
-	void Matrix::removeZeroColumns() {
+	void Matrix::removeZeroColumns() 
+	{
 		for (int i = 0; i < columns; ++i) {
 			if (sumColumn(i) == 0) { removeColumn(i); --i; }
 		}
 	}
 
-	void Matrix::removeZeroRows() {
+	void Matrix::removeZeroRows() 
+	{
 		for (int i = 0; i < rows; ++i) {
 			if (sumRow(i) == 0) {
 				removeRow(i); --i;
@@ -1638,6 +1503,21 @@ namespace MathParser
 			}
 		}
 		return piv;
+	}
+
+	Vector Matrix::solve(Vector b)
+	{//solve for Ax=b, where x will be the returned vector of variable values
+	 //if m==n
+		int n = rows;
+		Vector x(n);
+		for (int i = n - 1; i >= 0; i--) {
+			x[i] = get(i, n - 1) / get(i, i);
+			for (int k = i - 1; k >= 0; k--) {
+				set(k, n - 1, get(k, n - 1) - get(k, i) * x[i]);
+			}
+		}
+		return x;
+
 	}
 
 	Matrix Matrix::nullSpace() {
@@ -1694,11 +1574,14 @@ namespace MathParser
 		return Matrix(rows, columns, M.element);
 	}
 
-	Matrix Matrix::lowerHessenbergForm() {
-		if (rows != columns) { return Matrix(); }
+	Matrix Matrix::lowerHessenbergForm() 
+	{
+		if (rows != columns)
+			return Matrix();
 		Matrix A(rows, columns, element);
 
-		for (int j = columns - 1; j >= 0; --j) {//go the other way to remove the upper triangle of non-diagonal values
+		for (int j = columns - 1; j >= 0; --j) 
+		{// Go the other way to remove the upper triangle of non-diagonal values.
 			real pivot = A.get(j, j);
 			for (int i = j - 1; i >= 0; --i) {
 				if (i != j && A.get(i, j) != 0) {
@@ -1728,24 +1611,39 @@ namespace MathParser
 		return Matrix(rows, columns, A.element);
 	}
 
-	Matrix Matrix::characteristicMatrix() {//numerical method
+	Matrix Matrix::characteristicMatrix() 
+	{
 		Matrix next(rows, columns, element);
 		for (int k = 1; k < rows; ++k) {
 			Matrix M(columns, rows);
 			M.identity();
-			for (int p = 1; p < columns + 1; ++p) {
-				if (p == (rows - k)) {
-					M.element[((rows - k - 1) * rows) + (p - 1)] = (1 / (next.element[((rows - k) * columns) + (rows - k - 1)]));
+			for (int p = 1; p < columns + 1; ++p) 
+			{
+				if (p == (rows - k)) 
+				{
+					M.element[((rows - k - 1) * rows) + (p - 1)] = 
+						(1 / (next.element[((rows - k) * columns) + (rows - k - 1)]));
 				}
-				else { M.element[((rows - k - 1) * rows) + (p - 1)] = -next.element[((rows - k) * columns) + (p - 1)] / (next.element[((columns - k) * columns) + (columns - k - 1)]); }
+				else 
+				{ 
+					M.element[((rows - k - 1) * rows) + (p - 1)] = 
+						-next.element[((rows - k) * columns) + (p - 1)] / 
+						(next.element[((columns - k) * columns) + (columns - k - 1)]); 
+				}
 			}
 			Matrix Minv(columns, rows);
 			Minv.identity();
-			for (int p = 1; p < columns + 1; ++p) { Minv.element[(columns - k - 1) * columns + (p - 1)] = next.element[(columns - k) * columns + (p - 1)]; }
-			next = next.multiply(Minv, next.multiply(next, M));
+			for (int p = 1; p < columns + 1; ++p) 
+			{ 
+				Minv.element[(columns - k - 1) * columns + (p - 1)] = 
+					next.element[(columns - k) * columns + (p - 1)]; 
+			}
+			next *= M;
+			next = Minv * next;
 		}
 
-		for (int i = 1; i < next.rows; ++i) {//blank out anything that's not in the first row;
+		for (int i = 1; i < next.rows; ++i) 
+		{//blank out anything that's not in the first row;
 			for (int j = 0; j < next.columns; ++j) {
 				if (i == j) { next.element[i * columns + j] = 1; }
 				else { next.element[i * columns + j] = 0; }
@@ -1755,18 +1653,21 @@ namespace MathParser
 	}
 
 
-	bool Matrix::zeroInDiag() {//test if there are any 0's in the diagonal of a matrix
-		for (int i = 0; i < rows; ++i) {
-			if (get(i, i) == 0) { return true; }
-		}
+	bool Matrix::zeroInDiag() 
+	{//Test if there are any 0's in the diagonal of a matrix.
+		for (int i = 0; i < rows; ++i)
+			if (!get(i, i))
+				return true;		
 		return false;
 	}
 
-	real Matrix::det() {//determinant by exact (ie non-numerical) method, achieved by taking the product of diagonals in the reduced row echelon form (via Gaussian elimination)
-		if (rows != columns) { return 0; }
-		if (rows == 1) {
-			return get(0, 0);
-		}
+	real Matrix::det() 
+	{//Determinant by exact (ie non-numerical) method, achieved by taking the 
+	 //product of diagonals in the reduced row echelon form (via Gaussian elimination).
+		if (rows != columns) 
+			return 0;
+		if (rows == 1) 
+			return get(0, 0);		
 
 		//MATRICES OF 2nd ORDER
 		if (rows == 2) {
@@ -1781,9 +1682,10 @@ namespace MathParser
 			for (int i = 0; i < rows; ++i) {
 				if (M.get(i, i) == 0) {
 					for (int j = 0; j < columns; ++j) {
-						if (M.get(i, j) != 0 && M.get(j, i) != 0 && i != j) { //carefully choose rows to swap to create M non-zero diagonal
+						if (M.get(i, j) != 0 && M.get(j, i) != 0 && i != j) 
+						{ //Choose rows to swap to create M non-zero diagonal
 							M.swapRows(i, j); j = columns;
-							++signFlip;	//each time you swap rows, you flip the sign of the determinant
+							++signFlip;	// Row swaps flip the sign of the determinant.
 						}
 					}
 				}
@@ -1791,7 +1693,8 @@ namespace MathParser
 		}
 
 		//elimination with 3 cases:  
-		for (int j = 0; j < columns; ++j) {
+		for (int j = 0; j < columns; ++j) 
+		{
 			real pivot = M.get(j, j);
 			for (int i = j + 1; i < rows; ++i) {
 				Vector temp = M.row(j);
@@ -1802,13 +1705,13 @@ namespace MathParser
 							temp*= -1; 
 							goto skip; 
 						}
-						if ((M.get(i, j) == (-1 * pivot)) || ((-1 * M.get(i, j)) == pivot)) { goto skip; }
+						if ((M.get(i, j) == (-1 * pivot)) || ((-1 * M.get(i, j)) == pivot)) 
+							goto skip;
 					}
 					if (abs(M.get(i, j)) != abs(pivot)) 
 					{ 
 						temp*= (-M.get(i, j) / pivot); 
 					}
-
 				skip:
 					M.addToRow(i, temp);
 				}
@@ -1816,30 +1719,36 @@ namespace MathParser
 		}
 
 		real answer = 1;
-		for (int i = 0; i < columns; ++i) {
-			answer *= M.get(i, i);//multiply diagonals to get determinant
-		}
-		answer *= pow(-1, signFlip % 2);//fix flipped determinant
+		for (int i = 0; i < columns; ++i) 
+			answer *= M.get(i, i);//multiply diagonals to get determinant		
+		answer *= pow(-1, signFlip % 2);//fix flipped determinant sign.
 		return answer;
-	}//END DETERMINANT FUNCTION=======================================
+	}
 
-	real Matrix::detExact() {
+	real Matrix::detExact() 
+	{// Use Gauss-Jordan Elimination to get upper-triangle of matrix, then 
+	 // multiply trace values to get the determinant.
 		Matrix m = upperTriangularize();
 		real det = 1;
-		for (int i = 0; i < m.rows; ++i) {
-			det *= m.get(i, i);
-		}
+		for (int i = 0; i < m.rows; ++i) 
+			det *= m.get(i, i);		
 		return det;
 	}
 
-	Matrix Matrix::reducedRowEchelonForm() {
+	Matrix Matrix::reducedRowEchelonForm() 
+	{
 		Matrix A(rows, columns, element);
 
-		while (A.zeroInDiag() == true) {
-			for (int i = 0; i < rows; ++i) {
-				if (A.get(i, i) == 0) {
-					for (int j = 0; j < columns; ++j) {
-						if (A.get(i, j) != 0 && A.get(j, i) != 0 && i != j) { //carefully choose rows to swap to create a non-zero diagonal
+		while (A.zeroInDiag()) 
+		{
+			for (int i = 0; i < rows; ++i) 
+			{
+				if (A.get(i, i) == 0) 
+				{
+					for (int j = 0; j < columns; ++j) 
+					{// Choose rows to swap to create a non-zero diagonal
+						if (A.get(i, j) != 0 && A.get(j, i) != 0 && i != j) 
+						{ 
 							A.swapRows(i, j);
 							j = columns;
 						}
@@ -1848,20 +1757,27 @@ namespace MathParser
 			}
 		}
 
-		for (int j = 0; j < rows; ++j) {//go down and eliminate the lower triangle of values
+		// Iterate and eliminate the lower triangle of values
+		for (int j = 0; j < rows; ++j) 
+		{
 			real pivot = A.get(j, j);
-			for (int i = 0; i < rows; ++i) {
-				if (i != j && A.get(i, j) != 0) {
+			for (int i = 0; i < rows; ++i) 
+			{
+				if (i != j && A.get(i, j) != 0) 
+				{
 					Vector temp = A.row(j);
-
-					if (abs(A.get(i, j)) == abs(pivot)) {
-						if (A.get(i, j) == pivot) {
+					if (abs(A.get(i, j)) == abs(pivot)) 
+					{
+						if (A.get(i, j) == pivot) 
+						{
 							temp*= -1;
 							goto skip;
 						}
-						if ((A.get(i, j) == (-1 * pivot)) || ((-1 * A.get(i, j)) == pivot)) { goto skip; }
+						if ((A.get(i, j) == (-1 * pivot)) || ((-1 * A.get(i, j)) == pivot)) 
+							goto skip;
 					}
-					if (abs(A.get(i, j)) != abs(pivot)) {
+					if (abs(A.get(i, j)) != abs(pivot)) 
+					{
 						real a = -A.get(i, j) / pivot;
 						temp*= a;
 					}
@@ -1873,8 +1789,8 @@ namespace MathParser
 			}
 		}
 
-
-		for (int i = 0; i < rows; ++i) {//make diagonals into all 1's
+		for (int i = 0; i < rows; ++i) 
+		{//make diagonals into all 1's
 			if (A.get(i, i) != 0 && A.get(i, i) != 1) {
 				real a = ((real)1 / (A.get(i, i)));
 				A.multiplyRow(i, a);
@@ -1883,7 +1799,8 @@ namespace MathParser
 		return Matrix(rows, columns, A.element);
 	}
 
-	Matrix Matrix::addRow(Vector vec) {//adds vector to right hand side by default
+	Matrix Matrix::addRow(Vector vec) 
+	{//adds vector to right hand side by default
 		Matrix M(rows + 1, columns);
 		int rw = rows;
 		for (int i = 0; i < M.rows; ++i) {
@@ -1904,7 +1821,8 @@ namespace MathParser
 		return M;
 	}
 
-	Matrix Matrix::addRow(int rw, Vector vec) {
+	Matrix Matrix::addRow(int rw, Vector vec) 
+	{
 		Matrix M(rows + 1, columns);
 		for (int i = 0; i < M.rows; ++i) {
 			for (int j = 0; j < M.columns; ++j) {
@@ -1924,7 +1842,8 @@ namespace MathParser
 		return M;
 	}
 
-	Matrix Matrix::addColumn(Vector vec) {//adds to bottom of matrix by default
+	Matrix Matrix::addColumn(Vector vec) 
+	{//adds to bottom of matrix by default.
 		Matrix M(rows, columns + 1);
 		int cl = columns;
 		for (int i = 0; i < M.rows; ++i) {
@@ -1965,50 +1884,13 @@ namespace MathParser
 		return M;
 	}
 
-	bool Matrix::isInconsistent(Vector b) {//by Rouche-Capelli Theorem,  any system of linear equations (underdetermined or otherwise) is inconsistent if the rank of the augmented matrix is greater than the rank of the coefficient matrix
-		if (rank() <= addColumn(columns - 1, b).rank()) { return true; }
+	bool Matrix::isInconsistent(Vector b) 
+	{//by Rouche-Capelli Theorem, any system of linear equations 
+	 //(underdetermined or otherwise) is inconsistent if the rank of the 
+	 //augmented matrix is greater than the rank of the coefficient matrix.
+		if (rank() <= addColumn(columns - 1, b).rank()) 
+			return true;
 		return false;
-	}
-
-	bool Matrix::isUnderDetermined() { return (rows < columns); }
-	bool Matrix::isOverDetermined() { return (rows >= columns); }
-
-	bool Matrix::isSingular() {
-
-		//FILL IN
-		return false;
-	}
-
-	bool Matrix::solutionCheck(Vector x, Vector b) {//tests if Ax=b is a solution
-		for (int i = 0; i < rows; ++i) {
-			real val = 0;
-			for (int j = 0; j < columns; ++j) {
-				val += get(i, j) * x[j];
-			}
-			if (abs(val) - abs(b[i]) > 0) { return false; }
-		}
-		return true;
-	}
-
-	Vector Matrix::solve(Vector b) {//solve for Ax=b, where x will be the returned vector of variable values
-		if (isUnderDetermined() == true) {
-
-		}
-		if (isOverDetermined() == true) {
-
-		}
-
-		//if m==n
-		int n = rows;
-		Vector x(n);
-		for (int i = n - 1; i >= 0; i--) {
-			x[i] = get(i, n - 1) / get(i, i);
-			for (int k = i - 1; k >= 0; k--) {
-				set(k, n - 1, get(k, n - 1) - get(k, i) * x[i]);
-			}
-		}
-		return x;
-
 	}
 
 	std::vector<Matrix> Matrix::SVD() {
@@ -2036,7 +1918,7 @@ namespace MathParser
 		eigens1.insert(eigens1.begin(), eigens2.begin(), eigens2.end());
 		eigens2.clear();
 		eigens1.removeNullValues();
-		Mat.push_back(Vector(eigens1).toDiagonalMatrix());
+		Mat.push_back(Matrix(eigens1));
 		return(Mat);
 	}
 
@@ -2049,9 +1931,9 @@ namespace MathParser
 		int i, j, k;
 		real sum = 0;
 
-		for (i = 0; i < rows; i++) {
+		// Set row diagonals to 1.
+		for (i = 0; i < rows; i++)
 			U.set(i, i, 1);
-		}
 
 		for (j = 0; j < columns; j++) {
 			for (i = j; i < rows; i++) {
@@ -2067,13 +1949,10 @@ namespace MathParser
 				for (k = 0; k < j; k++) {
 					sum = sum + L.get(j, k) * U.get(k, i);
 				}
-				if (L.get(j, j) == 0) {
-					//printf("det(L) may be close to 0!\n Can't divide by 0...\n");
-					answer[0] = Matrix();
-					answer[1] = Matrix();
-					return answer;
-				}
-				U.set(j, i, ((A.get(j, i) - sum) / L.get(j, j)));
+				real divisor = L.get(j, j);
+				if (!divisor)//prevent division by 0.
+					divisor = std::numeric_limits<real>::min();
+				U.set(j, i, ((A.get(j, i) - sum) / divisor));
 			}
 		}
 		answer.push_back(L);
@@ -2089,9 +1968,9 @@ namespace MathParser
 		int i, j, k;
 		real sum = 0;
 
-		for (i = 0; i < rows; i++) {
+		// Set row diagonals to 1.
+		for (i = 0; i < rows; i++)
 			U.set(i, i, 1);
-		}
 
 		for (j = 0; j < columns; j++) {
 			for (i = j; i < rows; i++) {
@@ -2107,17 +1986,17 @@ namespace MathParser
 				for (k = 0; k < j; k++) {
 					sum = sum + L.get(j, k) * U.get(k, i);
 				}
-				if (L.get(j, j) == 0) {
-					printf("det(L) close to 0!\n Can't divide by 0...\n");
-					return Matrix();
-				}
-				U.set(j, i, ((A.get(j, i) - sum) / L.get(j, j)));
+				real divisor = L.get(j, j);
+				if (!divisor)//prevent division by 0.
+					divisor = std::numeric_limits<real>::min();								
+				U.set(j, i, ((A.get(j, i) - sum) / divisor));
 			}
 		}
 		return L;
 	}
 
-	Matrix Matrix::U() {
+	Matrix Matrix::U() 
+	{
 		Matrix A(rows, columns, element);
 		Matrix L(rows, columns);
 		Matrix U(rows, columns);
@@ -2125,16 +2004,16 @@ namespace MathParser
 		int i, j, k;
 		real sum = 0;
 
-		for (i = 0; i < rows; i++) {
-			U.set(i, i, 1);
-		}
+		// Set row diagonals to 1.
+		for (i = 0; i < rows; i++)
+			U.set(i, i, 1);		
 
 		for (j = 0; j < columns; j++) {
-			for (i = j; i < rows; i++) {
+			for (i = j; i < rows; i++) 
+			{
 				sum = 0;
-				for (k = 0; k < j; k++) {
-					sum = sum + L.get(i, k) * U.get(k, j);
-				}
+				for (k = 0; k < j; k++)
+					sum = sum + L.get(i, k) * U.get(k, j);				
 				L.set(i, j, A.get(i, j) - sum);
 			}
 
@@ -2143,23 +2022,22 @@ namespace MathParser
 				for (k = 0; k < j; k++) {
 					sum = sum + L.get(j, k) * U.get(k, i);
 				}
-				if (L.get(j, j) == 0) {
-					printf("det(L) close to 0!\n Can't divide by 0...\n");
-					return Matrix();
-				}
-				U.set(j, i, ((A.get(j, i) - sum) / L.get(j, j)));
+				real divisor = L.get(j, j);
+				if (!divisor)//prevent division by 0.
+					divisor = std::numeric_limits<real>::min();								
+				U.set(j, i, ((A.get(j, i) - sum) / divisor));
 			}
 		}
 		return U;
 	}
 
-	std::vector<Matrix> Matrix::QR() {//QR decomposition by Gram-Schmidt process
+	std::vector<Matrix> Matrix::QR() 
+	{//QR decomposition by Gram-Schmidt process
 		std::vector<Matrix> A;
 		Matrix Q(rows, columns);
 		Matrix R(rows, columns);
 
 		//set up Q matrix
-		//===============
 		Q.setColumn(0, column(0).length());
 		for (int i = 0; i < columns; ++i) {
 			Vector c = column(i);
@@ -2175,7 +2053,6 @@ namespace MathParser
 		}
 
 		//set up R matrix
-		//===============
 		for (int i = 0; i < rows; ++i) {
 			for (int j = 0; j < columns; ++j) {
 				if (j >= i) {
@@ -2230,7 +2107,6 @@ namespace MathParser
 		Matrix R(rows, columns);
 
 		//set up Q matrix
-		//===============
 		Q.setColumn(0, column(0).length());
 		for (int i = 1; i < rows - 1; ++i) {
 			Vector c = column(i);
@@ -2245,7 +2121,6 @@ namespace MathParser
 		}
 
 		//set up R matrix
-		//===============
 		for (int i = 0; i < rows; ++i) {
 			for (int j = 0; j < columns; ++j) {
 				if (j >= i) {
@@ -2259,16 +2134,20 @@ namespace MathParser
 		return Matrix(rows, columns, R.element);
 	}
 
-	Matrix Matrix::inverseByQR() {
-		if (det() == 0) { return Matrix(); }
+	Matrix Matrix::inverseByQR() 
+	{
+		if (!det()) 
+			return Matrix();
 		std::vector<Matrix> qr = QR();
-		Matrix A = multiply(qr[1], qr[0].transpose());
-		return Matrix(rows, columns, A.element);
+		Matrix qr_t = qr[0].transpose();
+		return qr[1] * qr_t;
 	}
 
-	Matrix Matrix::GramSchmidt() {//orthogonalization by Gram-Schmidt process using Gaussian Elimination
+	Matrix Matrix::GramSchmidt() 
+	{//orthogonalization by Gram-Schmidt process using Gaussian Elimination
 
-		if (det() == 0) { return Matrix(); }
+		if (!det())
+			return Matrix();
 		Matrix Aug(rows, columns, element);
 		Matrix AT(rows, columns, element);
 		AT = AT.transpose();
@@ -2278,7 +2157,7 @@ namespace MathParser
 		{
 			for (int i = 0; i < rows; ++i) 
 			{
-				if (A.get(i, i) == 0) 
+				if (A.get(i, i)) 
 				{
 					for (int j = 0; j < columns; ++j) 
 					{
@@ -2294,7 +2173,8 @@ namespace MathParser
 			}
 		}
 
-		for (int j = 0; j < columns; ++j) {//go down and eliminate the lower triangle of values
+		for (int j = 0; j < columns; ++j) 
+		{//Iterate down matrix and eliminate the lower triangle of values.
 			real pivot = A.get(j, j);
 			for (int i = j + 1; i < rows; ++i) {
 				if (i != j && A.get(i, j) != 0) {
@@ -2324,7 +2204,8 @@ namespace MathParser
 			}
 		}
 
-		for (int i = 0; i < rows; ++i) {//make diagonals into all 1's
+		for (int i = 0; i < rows; ++i) 
+		{//Make diagonals into all 1's.
 			if (A.get(i, i) != 0 && A.get(i, i) != 1) {
 				real a = ((real)1 / (A.get(i, i)));
 				A.multiplyRow(i, a);
@@ -2334,7 +2215,9 @@ namespace MathParser
 		return Matrix(rows, columns, Aug.element);
 	}
 
-	std::vector<int> Matrix::JacobiIndexing() {//returns indices i,j for largest element in matrix quickly for use in JacobiTransformation method
+	std::vector<int> Matrix::JacobiIndexing() 
+	{// Returns indices i,j for largest element in matrix quickly for use in 
+	 //'JacobiTransformation()' function.
 		std::vector<int> answer;
 		answer.push_back(-1);
 		answer.push_back(-1);
@@ -2351,7 +2234,8 @@ namespace MathParser
 		return answer;
 	}
 
-	Matrix Matrix::GivensRotationMatrix(real a1, real a2, int r1, int r2) {//eliminate a2 with a1, a1 is in row r1, a2 is in row r2
+	Matrix Matrix::GivensRotationMatrix(real a1, real a2, int r1, int r2) 
+	{//eliminate a2 with a1, a1 is in row r1, a2 is in row r2.
 		Matrix el(rows, rows);
 		el.identity();
 
@@ -2367,7 +2251,9 @@ namespace MathParser
 		return Matrix(rows, rows, el.element);
 	}
 
-	Matrix Matrix::JacobiRotationMatrix(int p, int q, real c, real s) {//used in Jacobi Transformation -- will diagonalize a matrix and produce an eigenvector matrix
+	Matrix Matrix::JacobiRotationMatrix(int p, int q, real c, real s) 
+	{//Used in Jacobi Transformation -- will diagonalize a matrix and produce an 
+	 //eigenvector matrix.
 		Matrix el(rows, rows);
 		el.identity();
 
@@ -2378,15 +2264,15 @@ namespace MathParser
 		return Matrix(rows, rows, el.element);
 	}
 
-	std::vector<Matrix> Matrix::JacobiTransformation() {//outputs an array with both diagonalized matrix and eigenvectors
-														//if (rows != columns || isSymmetric()==false) { return NULL;	}
-		Matrix D(rows, columns, element);  //matrix to rotate/diagonalize
-		Matrix Eigenvectors(rows, columns); //matrix of Eigenvectors produced by multiplying each successive Jacobi Rotation matrix
+	std::vector<Matrix> Matrix::JacobiTransformation(highpUint limit)
+	{//outputs an array with both diagonalized matrix and eigenvectors
+		Matrix D(rows, columns, element); //matrix to rotate/diagonalize
+		Matrix Eigenvectors(rows, columns);//matrix of Eigenvectors produced by successive Jacobi rotations.
 		Eigenvectors.identity();
 
-		int counter = 0;//counts the number of iterations
-		long unsigned int limit = 10000;
-		while (D.isDiagonalized() == false && counter < limit) {
+		int counter = 0;//counts the number of iterations, to stop at some set limit.	
+		while (!D.isDiagonalized() && counter < limit) 
+		{
 			std::vector<int> elem = D.JacobiIndexing();
 			if (elem[0] > D.rows || elem[1] > D.columns || elem[0] < 0 || elem[1] < 0 || elem[0] == elem[1]) { break; }
 			int p = elem[0];
@@ -2410,21 +2296,24 @@ namespace MathParser
 		return answer;
 	}
 
-	Matrix Matrix::eigenvectors() {
-		if (isSymmetric() == true) {
+	Matrix Matrix::eigenvectors(int iterations)
+	{
+		if (isSymmetric()) //If a symmetric matrix, simply use Jacobi transformation method.
+		{
 			std::vector<Matrix> EV = JacobiTransformation();
 			return EV[1];
 		}
-		else {
+		else //Else, use iterative QR decomp method.
+		{
 			std::vector<Matrix> qr = QR();
 			Matrix Eigenvalues = qr[0];
 			Matrix A2 = multiply(qr[1], qr[0]);
 
-			int iterations = pow(rows * columns, 3);
-			if (iterations > 500) { iterations = 500; }
-			for (int i = 1; i < iterations; ++i) {//then, QR decomposition. Use Q as multiplicand where Eigenvectors = Q1*Q2*...Qn
+			for (int i = 1; i < iterations; ++i) 
+			{//then, QR decomposition. Use Q as multiplicand where Eigenvectors = Q1*Q2*...Qn
 				qr = A2.QR();
-				if (qr[0].rows == 0 && qr[1].rows == 0) { break; }
+				if (qr[0].rows == 0 && qr[1].rows == 0) 
+					break;
 				Eigenvalues = Eigenvalues.multiply(Eigenvalues, qr[0]);
 				A2 = A2.multiply(qr[1], qr[0]);
 				qr.clear();
@@ -2434,14 +2323,19 @@ namespace MathParser
 		return Matrix();
 	}
 
-	Matrix Matrix::Cholesky() {	//returns matrix L decomposition of matrix where A = LL^T
-		if (rows <= 1 || columns <= 1) { return Matrix(); }
+	Matrix Matrix::Cholesky() 
+	{	//returns matrix L decomposition of matrix where A = LL^T.
+		if (rows <= 1 || columns <= 1) 
+			return Matrix();
 		Matrix L(rows, columns);
 		L.set(0, 0, sqrt(get(0, 0)));
 
-		for (int j = 0; j < columns; ++j) {
-			for (int i = j; i < rows; ++i) {
-				if (i == j) {
+		for (int j = 0; j < columns; ++j) 
+		{
+			for (int i = j; i < rows; ++i) 
+			{
+				if (i == j) 
+				{
 					real temp = get(j, j);
 					real temp2 = 0;
 					for (int k = 0; k < j; ++k) {
@@ -2459,15 +2353,16 @@ namespace MathParser
 					}
 					if (temp != 0) { L.set(i, j, temp * (temp2 - temp3)); }
 				}
-
 			}
 		}
 		return Matrix(rows, columns, L.element);
 	}
 
-	std::vector<Matrix> Matrix::LDL() {	//returns matrix L and D decomposition of matrix where A = LDL^T
+	std::vector<Matrix> Matrix::LDL() 
+	{	//returns matrix L and D decomposition of matrix where A = LDL^T.
 		std::vector<Matrix> answer;
-		if (rows <= 1 || columns <= 1) { return answer; }
+		if (rows <= 1 || columns <= 1)
+			return answer;
 		Matrix L(rows, columns);
 		Matrix D(rows, columns);
 		L.set(0, 0, sqrt(get(0, 0)));
@@ -2500,7 +2395,8 @@ namespace MathParser
 		return answer;
 	}
 
-	Matrix Matrix::dominantEigenvector() {//calculated by power method
+	Matrix Matrix::dominantEigenvector() 
+	{//calculated by power method
 		Matrix A(rows, columns, element);
 		Matrix rd(A.rows, 1);
 		rd.set(0, 0, 1);//set first value of matrix to 1
@@ -2512,29 +2408,35 @@ namespace MathParser
 		return rd;//dominant eigenvector
 	}
 
-	real Matrix::dominantEigenvalue() {//calculated by power method
+	real Matrix::dominantEigenvalue(int iterations) 
+	{//calculated by power method
 		Matrix A = *this;
 		Matrix rd(A.rows, 1);
 		rd.set(0, 0, 1);//set first value of matrix to 1
 		Matrix init = rd;
-		for (int i = 0; i < 500; ++i) {
+		for (int i = 0; i < iterations; ++i)
+		{
 			rd = A.multiply(A, rd);
 			rd = rd.multiply(rd, 1 / rd.element[A.rows - 1]);
 		}
-		real egv = A.multiply(A.multiply(A, rd), rd).sumColumn(0);
+		Matrix step1 = A * rd;
+		step1 *= rd;
+		real egv = step1.sumColumn(0);
 		egv /= rd.multiply(rd, rd).sumColumn(0);
 		return egv;//dominant eigenvalue
 	}
 
-	bool Matrix::isPositiveDefinite() {//if all eigenvalues are positive, the matrix is positive definite
+	bool Matrix::isPositiveDefinite() 
+	{//By theorem, if all eigenvalues are positive, the matrix is positive definite.
 		Vector vec = eigenvaluesRealExact();
-		for (int i = 0; i < vec.size(); ++i) {
-			if (vec[i] <= 0) { return false; }
-		}
+		for (int i = 0; i < vec.size(); ++i)
+			if (vec[i] <= 0) 
+				return false;		
 		return true;
 	}
 
-	bool Matrix::isPositiveSemidefinite() {//if all eigenvalues are positive or 0, the matrix is positive semi-definite
+	bool Matrix::isPositiveSemidefinite() 
+	{//if all eigenvalues are positive or 0, the matrix is positive semi-definite
 		Vector vec = eigenvaluesRealExact();
 		for (int i = 0; i < vec.size(); ++i) {
 			if (vec[i] < 0) { return false; }
@@ -2548,14 +2450,14 @@ namespace MathParser
 		return GE.characteristicPolynomial().realRoots();
 	}
 
-	Vector Matrix::eigenvaluesRealExact() {//finds real eigenvalues by method of QR algorithm with Hessenberg intermediate step
+	Vector Matrix::eigenvaluesRealExact() 
+	{//finds real eigenvalues by method of QR algorithm with Hessenberg intermediate step
 		Polynomial p = characteristicPolynomial();
 		return p.realRoots();
 	}
 
-	std::vector<ComplexNumber> Matrix::eigenvaluesRealAndComplexExact() 
-	{
-		//Finds real eigenvalues by method of QR algorithm with Hessenberg intermediate step,
+	std::vector<ComplexNumber> Matrix::eigenvaluesRealAndComplexExact(int iterations) 
+	{	//Finds real eigenvalues by method of QR algorithm with Hessenberg intermediate step,
 		//then either factors those roots to get the last few complex roots or uses the 
 		//numerical Durand-Kerner method of root-finding
 
@@ -2594,15 +2496,12 @@ namespace MathParser
 		}
 
 		if (p.size() > 3) 
-		{
-			//start finding roots with Durand-Kerner method
-			int iterations = 10000;
+		{	//start finding roots with Durand-Kerner method
 			ComplexNumber z = ComplexNumber(lowbound, lowboundC);
 			int size = sizeof(z);
 			std::vector<ComplexNumber> R;
-			for (int i = 0; i < p.size(); i++) { 
-				R.push_back(std::pow(z, i)); 
-			}
+			for (int i = 0; i < p.size(); i++)
+				R.push_back(std::pow(z, i)); 			
 
 			for (int i = 0; i < iterations; i++) {
 				for (int j = 0; j < p.size(); j++) {
@@ -2614,9 +2513,10 @@ namespace MathParser
 				}
 			}
 
-
-			for (int i = 0; i < R.size(); ++i) { //now filter out all the bad results
-				if (R[i].im() != 0) { //only complex roots accepted
+			for (int i = 0; i < R.size(); ++i) 
+			{ //now filter out all the bad results
+				if (R[i].im() != 0) 
+				{//only complex roots accepted
 					R[i] = p.NewtonsMethodComplex(p,R[i]);
 					ComplexNumber temp = p.evaluate(R[i]);
 					real a = std::abs(temp.re());
@@ -2642,20 +2542,25 @@ namespace MathParser
 		return complexRoots;
 	}
 
-	Vector Matrix::eigenvaluesNumerical() {//calculated by power method w/shifts
+	Vector Matrix::eigenvaluesNumerical() 
+	{//calculated by power method w/shifts
 		Matrix A = *this;
 		Matrix v;
 		Vector egv;
-		for (int i = 0; i < A.rows; ++i) {	//A' = A - (eigenvalue)*U*UT
+		for (int i = 0; i < A.rows; ++i) 
+		{//A' = A - (eigenvalue)*U*UT
 			v = A.dominantEigenvector();
-			real eigenval = A.multiply(A.multiply(A, v), v).sumColumn(0);
+			Matrix A_1 = A * v;
+			A_1 *= v;
+			real eigenval = A_1.sumColumn(0);
 			real val = v.multiply(v, v).sumColumn(0);
 			if (val != 0) { eigenval /= val; }
 			else { eigenval = 0; }
 			egv.push_back(eigenval);
 			v.normalize();
 
-			Matrix U = v.multiply(v, v.transpose());
+			Matrix v_t = v.transpose();
+			Matrix U = v * v_t;
 
 			//U.display();
 			U = U.multiply(U, -1 * eigenval);
@@ -2664,32 +2569,37 @@ namespace MathParser
 		return egv;
 	}
 
-	Matrix Matrix::eigenvalueMatrix() {
+	Matrix Matrix::eigenvalueMatrix() 
+	{
 		Matrix A = *this;
 		std::vector<Matrix> QR;
 
 		int iterations = pow((A.rows * A.columns), 2);
 		for (int i = 0; i < iterations; ++i) {//first, LU decomposition
 			QR = A.LU();
-			if (QR[0].rows == 0 && QR[1].rows == 0) { break; }
+			if (QR[0].rows == 0 && QR[1].rows == 0) 
+				break;
 			A = A.multiply(QR[1], QR[0]);
 		}
 
 		for (int i = 0; i < iterations; ++i) {//then, QR decomposition
 			QR = A.QR();
-			if (QR[0].rows == 0 && QR[1].rows == 0) { break; }
+			if (QR[0].rows == 0 && QR[1].rows == 0) 
+				break;
 			A = A.multiply(QR[1], QR[0]);
 		}
 		for (int i = 0; i < iterations; ++i) {//then, QR decomposition
 			QR = A.HouseholderQR();
-			if (QR[0].rows == 0 && QR[1].rows == 0) { break; }
+			if (QR[0].rows == 0 && QR[1].rows == 0) 
+				break;
 			A = A.multiply(QR[1], QR[0]);
 		}
 
 		return A;
 	}
 
-	Matrix Matrix::eigenvalueMatrix(Matrix A, int loops) {//recursive version of eigenvalueMatrix calculation
+	Matrix Matrix::eigenvalueMatrix(Matrix A, int loops) 
+	{// Recursive version of eigenvalueMatrix calculation.
 		if (loops <= 1) { return A; }
 		--loops;
 		std::vector<Matrix> QR;
@@ -2697,25 +2607,29 @@ namespace MathParser
 		int iterations = (A.rows * A.columns);
 		for (int i = 0; i < iterations; ++i) {//first, LU decomposition
 			QR = A.LU();
-			if (QR[0].rows == 0 && QR[1].rows == 0) { break; }
+			if (QR[0].rows == 0 && QR[1].rows == 0) 
+				break;
 			A = A.multiply(QR[1], QR[0]);
 		}
 
 		for (int i = 0; i < iterations; ++i) {//then, QR decomposition
 			QR = A.QR();
-			if (QR[0].rows == 0 && QR[1].rows == 0) { break; }
+			if (QR[0].rows == 0 && QR[1].rows == 0) 
+				break;
 			A = A.multiply(QR[1], QR[0]);
 		}
 		for (int i = 0; i < iterations; ++i) {//then, QR decomposition
 			QR = A.HouseholderQR();
-			if (QR[0].rows == 0 && QR[1].rows == 0) { break; }
+			if (QR[0].rows == 0 && QR[1].rows == 0) 
+				break;
 			A = A.multiply(QR[1], QR[0]);
 		}
 
 		return eigenvalueMatrix(A, loops);
 	}
 
-	void Matrix::power(real n) {//exponentiates all elements in the matrix by some power
+	void Matrix::power(real n) 
+	{//exponentiates all elements in the matrix by some power
 		for (int i = 0; i < rows; ++i) {
 			for (int j = 0; j < columns; ++j) {
 				set(i, j, pow(get(i, j), n));
@@ -2723,45 +2637,44 @@ namespace MathParser
 		}
 	}
 
-	Matrix Matrix::leastSquares(Matrix X, Matrix Y) {//B=(X^T*X)^-1 * X^T * Y  
+	Matrix Matrix::leastSquares(Matrix X, Matrix Y) 
+	{//B=(X^T*X)^-1 * X^T * Y  
 		Matrix XT = X.transpose();
-		return Y.multiply(X.multiply(X.multiply(XT, X).inverse(), XT), Y);
+		XT *= X;
+		Matrix XTinv = XT.inverse();
+		XTinv *= XT;
+		return XTinv * Y;
 	}
 
-	Matrix Matrix::leastSquaresMatrix() {	//B=(X^T*X)^-1 * X^T * Y 
-											/*note:  the matrix must be formatted in MINITAB format, such that the first column is the Y values, the rest are the
-											column vectors of the X_i variable values. */
+	Matrix Matrix::leastSquaresMatrix() 
+	{//B=(X^T*X)^-1 * X^T * Y 
+	 //NOTE: the matrix must be formatted in MINITAB format, so that the first column 
+	 //contains the Y values, the rest are the column vectors of the X_i variable values.
 
 		Matrix M(rows, columns, element);//copy parent matrix
-		if (columns != 2 && rows == 2) { M = M.transpose(); }//put matrix into column vector form
-
-		Matrix X(M.rows, M.columns, element);	//isolate X variable values
-		for (int i = 0; i < X.rows; ++i) {
-			X.set(i, 0, 1);
-		}
-
-		Matrix Y(M.rows, 1, M.column(0));	//create seperate vector of y values
-
-		return multiply(multiply(X.transpose(), X).inverse(), multiply(X.transpose(), Y));
-	}
-
-	Function Matrix::leastSquares() {	
-		//B=(X^T*X)^-1 * X^T * Y 
-		/*note:  the matrix must be formatted in MINITAB format, such that the first column is the Y values, the rest are the
-		column vectors of the X_i variable values. See https://onlinecourses.science.psu.edu/stat501/node/292 for
-		examples to prove this technique. There is test code also available at:  https://www.wessa.net/rwasp_multipleregression.wasp */
-
-		Matrix M(rows, columns, element);//copy parent matrix
-		if (columns != 2 && rows == 2) { M = M.transpose(); }//put matrix into column vector form
+		if (columns != 2 && rows == 2) 
+			M = M.transpose(); //put matrix into column vector form
 
 		Matrix X(M.rows, M.columns, element);//isolate X variable values
-		for (int i = 0; i < X.rows; ++i) {
-			X.set(i, 0, 1);
-		}
+		for (int i = 0; i < X.rows; ++i) 
+			X.set(i, 0, 1);		
 
 		Matrix Y(M.rows, 1, M.column(0));//create seperate vector of y values
+		Matrix lhs = X.transpose();
+		lhs *= X;
+		lhs = lhs.inverse();
+		Matrix rhs = X.transpose();
+		rhs *= Y;
+		return lhs * rhs;
+	}
 
-		Matrix coef = multiply(multiply(X.transpose(), X).inverse(), multiply(X.transpose(), Y));
+	Function Matrix::leastSquares() 
+	{	//B=(X^T*X)^-1 * X^T * Y 
+		//NOTE:  the matrix must be formatted in MINITAB format, so that the first column contains
+		//the Y values, the rest are the column vectors of the X_i variable values. 
+		//See https://onlinecourses.science.psu.edu/stat501/node/292 for examples. 
+
+		Matrix coef = leastSquaresMatrix();
 		Vector cf;
 		std::string funct = "f(";
 		for (int i = 0; i < coef.rows; ++i) {
@@ -2783,8 +2696,8 @@ namespace MathParser
 		return Function(funct);
 	}
 
-	Vector Matrix::residuals() {
-		//get least squares regression function
+	Vector Matrix::residuals() 
+	{//get least squares regression function
 		Function f = leastSquares();
 
 		//get y-hat values
@@ -2798,18 +2711,16 @@ namespace MathParser
 			yhat.push_back(f.evaluate(vars));
 		}
 
-		//calculate resid. = y-yhat
+		// Calculate resid. = y-yhat. In MINITAB format, column 0 is the y-value column.
 		Vector residuals;
-		for (int i = 0; i < yhat.size(); ++i) {
-			residuals.push_back(get(i, 0) - yhat[i]);//in MINITAB format, column 0 is the y-value column
-		}
+		for (int i = 0; i < yhat.size(); ++i)
+			residuals.push_back(get(i, 0) - yhat[i]);		
 
 		return residuals;
 	}
 
 	real Matrix::Rsquared() 
-	{// aka Pearsson's "R"^2
-	 //for explaination, see https://people.richland.edu/james/ictcm/2004/multiple.html
+	{// aka Pearsson's "R"^2. Ref: https://people.richland.edu/james/ictcm/2004/multiple.html
 
 		Function f = leastSquares();//get leastSquares multivariate function
 
@@ -2864,8 +2775,8 @@ namespace MathParser
 		return Rsquared;
 	}
 
-	real Matrix::adjustedRsquared() {// aka Pearsson's "R"^2
-									   //for explaination, see https://people.richland.edu/james/ictcm/2004/multiple.html
+	real Matrix::adjustedRsquared() 
+	{// aka Pearsson's "R"^2. Ref: https://people.richland.edu/james/ictcm/2004/multiple.html
 
 		Function f = leastSquares();//get leastSquares multivariate function
 
@@ -2897,7 +2808,6 @@ namespace MathParser
 		}
 
 		//degress of freedom calculations
-		//===============================
 		real dfRegression = columns - 1;	//#predictor varibles aka 'k'
 		real dfTotal = rows - 1;//total degrees freedom
 		real dfResiduals = dfTotal - dfRegression;//# of residuals
@@ -2908,13 +2818,11 @@ namespace MathParser
 		real SStotal = totalError.sum();
 
 		//mean square (MS) calculations
-		//=============================
 		real MSregression = SSregression / dfRegression;
 		real MSresiduals = SSresiduals / dfResiduals;
 		real MStotal = SStotal / dfTotal;
 
 		//important statistics
-		//====================
 		real sqrtErrorVariance = sqrt(MSresiduals);	//equal to standard deviation of distribution of estimate
 		real FTestStatistic = MSregression / MSresiduals;
 		real Rsquared = (SStotal - SSresiduals) / SStotal;
@@ -2923,8 +2831,8 @@ namespace MathParser
 		return adjustedRsquared;
 	}
 
-	real Matrix::FTestStatistic() {
-		//for explaination, see https://people.richland.edu/james/ictcm/2004/multiple.html
+	real Matrix::FTestStatistic() 
+	{//Ref: https://people.richland.edu/james/ictcm/2004/multiple.html
 
 		Function f = leastSquares();//get leastSquares multivariate function
 
@@ -2979,15 +2887,17 @@ namespace MathParser
 		return FTestStatistic;
 	}
 
-	std::vector<Matrix> Matrix::thinQR() {
+	std::vector<Matrix> Matrix::thinQR() 
+	{
 		std::vector<Matrix> answer = QR();
 		answer[0];
 		answer[1].trim();
 		return answer;
 	}
 
-	std::vector<Matrix> Matrix::HouseholderQR() {//given some matrix, this produces its Householder QR factorization
-		Matrix A = *this;
+	std::vector<Matrix> Matrix::HouseholderQR() 
+	{//given some matrix, this produces its Householder QR factorization
+		Matrix A = *this;//copy this matrix.
 		Matrix Q(rows, columns);
 		Q.identity();
 		for (int j = 0; j < columns - 1; ++j) {
@@ -3020,20 +2930,26 @@ namespace MathParser
 		return answer;
 	}
 
-	Matrix Matrix::pseudoinverse() {//calculates the Moore-Penrose inverse: A* = R^-1 * Q^T.  Note:  A*A = I.
+	Matrix Matrix::pseudoinverse()
+	{//calculates the Moore-Penrose inverse: A* = R^-1 * Q^T.  Note:  A*A = I.
 		std::vector<Matrix> qr = thinQR();
-		return multiply(qr[1].inverse(), qr[0].transpose());
+		Matrix inv1 = qr[1].inverse();
+		Matrix inv2 = qr[0].transpose();
+		Matrix result = inv1 * inv2;
+		return result;
 	}
 
 	Polynomial Matrix::characteristicPolynomial() {
 		Vector ans = characteristicMatrix().row(0);
 		Vector answer(columns + 1);
-		for (int i = 0; i < columns; ++i) { answer[columns - 1 - i] = -ans[i]; }
+		for (int i = 0; i < columns; ++i) 
+			answer[columns - 1 - i] = -ans[i];
 		answer[columns] = 1;
 		return Polynomial(answer);
 	}
 
-	std::vector<Vector> Matrix::toVectorArray() {
+	std::vector<Vector> Matrix::toVectorArray() 
+	{
 		std::vector<Vector> arr;
 		for (int i = 0; i < rows; ++i) {
 			Vector ans;
@@ -3045,11 +2961,13 @@ namespace MathParser
 		return arr;
 	}
 
-	Matrix directionMatrix(Vector v) {
+	Matrix directionMatrix(Vector v) 
+	{
 		int sz = v.size() + 1;
 		Matrix A(sz, sz);
 		A.identity();
-		for (int i = 0; i < v.size(); ++i) { A.set(i, i, v[i]); }
+		for (int i = 0; i < v.size(); ++i) 
+			A.set(i, i, v[i]);
 		return A;
 	}
 
@@ -3077,10 +2995,13 @@ namespace MathParser
 	}
 
 	Matrix rotationMatrix(Vector v) {
-		//Input rotation vector should be of form <angle,x,y,z> for 3D rotation, or <angle,x,y> for 2D.
-		//If x, y, or z == 1, then it is a rotation around that axis.  Only angle and one coordinate should be non-zero
-		if (v.size() < 3) { return Matrix(); }
-		if (v.size() == 3) {//2D rotation matrix
+		//Input rotation vector should be of form <angle,x,y,z> for 3D rotation, 
+		//or <angle,x,y> for 2D. If x, y, or z == 1, then it is a rotation around 
+		//that axis.  Only angle and one coordinate should be non-zero.
+		if (v.size() < 3) 
+			return Matrix();
+		if (v.size() == 3) 
+		{//2D rotation matrix
 			Matrix M(2, 2);
 			M.set(0, 0, cos(v[0]));
 			M.set(0, 1, -sin(v[0]));
@@ -3088,8 +3009,10 @@ namespace MathParser
 			M.set(1, 1, cos(v[0]));
 			return M;
 		}
-		if (v.size() == 4) {//3D rotation matrix (contained in a 4x4 homogeneous coordinate matrix)
-			if (v[1] == 1) {//x-axis rotation
+		if (v.size() == 4) 
+		{//3D rotation matrix (contained in a 4x4 homogeneous coordinate matrix)
+			if (v[1] == 1) 
+			{//x-axis rotation
 				Matrix M(4, 4);
 				M.identity();
 				M.set(1, 1, cos(v[0]));
@@ -3098,7 +3021,8 @@ namespace MathParser
 				M.set(2, 2, cos(v[0]));
 				return M;
 			}
-			if (v[2] == 1) {//y-axis rotation
+			if (v[2] == 1) 
+			{//y-axis rotation
 				Matrix M(4, 4);
 				M.identity();
 				M.set(0, 0, cos(v[0]));
@@ -3107,7 +3031,8 @@ namespace MathParser
 				M.set(2, 2, cos(v[0]));
 				return M;
 			}
-			if (v[3] == 1) {//z-axis rotation
+			if (v[3] == 1) 
+			{//z-axis rotation
 				Matrix M(4, 4);
 				M.identity();
 				M.set(0, 0, cos(v[0]));
@@ -3124,17 +3049,20 @@ namespace MathParser
 		int sz = v.size() + 1;
 		Matrix A(sz, sz);
 		A.identity();
-		for (int i = 0; i < v.size(); ++i) { A.set(i, i, v[i]); }
+		for (int i = 0; i < v.size(); ++i) 
+			A.set(i, i, v[i]);
 		return A;
 	}
 
 	Matrix translationMatrix(Vector v) {
-		if (v.size() <= 1) { return Matrix(); }
-		if (v.size() == 2) {}
-		if (v.size() == 3) {
+		if (v.size() < 3) 
+			return Matrix();
+		if (v.size() >= 3) 
+		{
 			Matrix A(4, 4);
 			A.identity();
-			for (int i = 0; i < v.size(); ++i) { A.set(i, A.columns - 1, v[i]); }
+			for (int i = 0; i < 3; ++i) 
+				A.set(i, A.columns - 1, v[i]);
 			return A;
 		}
 		return Matrix();
@@ -3178,4 +3106,203 @@ namespace MathParser
 		}
 		return V;
 	}
+
+	Matrix outerProduct(Matrix& A, Matrix& B)
+	{// Operation that creates for every element of Matrix A, a submatrix of B * (A_i_j)
+		if (A.columns != B.rows)
+			return Matrix();
+		Vector ans(A.size() * B.size());
+		int rw = A.rows * B.rows;
+		int cl = A.columns * B.columns;
+
+		for (int i = 0; i < rw; ++i) {
+			for (int j = 0; j < cl; ++j) {
+				ans[i * cl + j] = B.element[((i % B.rows) * B.columns) +
+					(j % B.columns)] * A.element[floor(i / B.rows) *
+					A.columns + floor(j / B.columns)];
+			}
+		}
+		return Matrix(rw, cl, ans);
+	}
+
+	Matrix wedgeProduct(Matrix& A, Matrix& B)
+	{//Ref: https://math.wikia.org/wiki/Outer_product
+		Matrix prodA = outerProduct(A, B);
+		Matrix prodB = outerProduct(B, A);
+		return prodA - prodB;
+	}
+
+	Matrix Matrix::multiply(Matrix& A, Matrix& B)
+	{
+		int size = A.rows * B.columns;
+		Vector answerN(size);
+		if (B.columns == 1)
+		{
+			for (int i = 0; i < A.rows; ++i) {
+				for (int j = 0; j < A.columns; ++j) {
+					answerN[i] += A.get(i, j) * B.get(j, 0);
+				}
+			}
+			return Matrix(A.rows, B.columns, answerN);
+		}
+
+		for (int i = 0; i < A.rows; ++i)
+		{
+			for (int j = 0; j < B.columns; ++j)
+			{
+				for (int k = 0; k < A.columns; ++k)
+				{
+					answerN[(i * B.columns) + j] += A.get(i, k) * B.get(k, j);
+				}
+			}
+		}
+
+		return Matrix(A.rows, B.columns, answerN);
+	}
+
+	Matrix Matrix::multiply(Matrix& A, real B) {
+		Vector answerN(size());
+		for (int i = 0; i < A.rows; ++i)
+		{
+			for (int j = 0; j < A.columns; ++j)
+			{
+				answerN[(i * A.columns) + j] = A.get(i, j) * B;
+			}
+		}
+		return Matrix(A.rows, A.columns, answerN);
+	}
+
+	Matrix Matrix::multiply(real b, Matrix& A)
+	{
+		Vector answerN(size());
+		for (int i = 0; i < A.rows; ++i)
+		{
+			for (int j = 0; j < A.columns; ++j)
+			{
+				answerN[(i * A.columns) + j] = A.get(i, j) * b;
+			}
+		}
+		return Matrix(A.rows, A.columns, answerN);
+	}
+
+	Matrix Matrix::add(Matrix& A, Matrix& B)
+	{
+		if (A.size() != B.size())
+			return Matrix();
+
+		int size = A.rows * A.columns;
+		Vector answerN;
+		answerN.resize(size, 0);
+		for (int i = 0; i < A.rows; ++i)
+		{
+			for (int j = 0; j < B.columns; ++j)
+			{
+				answerN[(i * A.columns) + j] = A.get(i, j) + B.get(i, j);
+			}
+		}
+		return Matrix(B.rows, A.columns, answerN);
+	}
+
+	Matrix Matrix::add(Matrix& A, real B)
+	{
+		int size = A.rows * A.columns;
+		Vector answerN;
+		answerN.resize(size, 0);
+		for (int i = 0; i < A.rows; ++i)
+		{
+			for (int j = 0; j < A.columns; ++j)
+			{
+				answerN[(i * A.columns) + j] = A.get(i, j) + B;
+			}
+		}
+		return Matrix(A.rows, A.columns, answerN);
+	}
+
+	Matrix Matrix::add(real B, Matrix& A)
+	{
+		return add(A, B);
+	}
+
+	Matrix Matrix::subtract(Matrix& A, Matrix& B)
+	{
+		if (A.size() != B.size())
+			return Matrix();
+		int size = A.rows * A.columns;
+		Vector answerN;
+		answerN.resize(size, 0);
+		for (int i = 0; i < size; ++i) { answerN[i] = 0; }
+
+		for (int i = 0; i < A.rows; ++i)
+		{
+			for (int j = 0; j < B.columns; ++j)
+			{
+				answerN[(i * A.columns) + j] += A.get(i, j) - B.get(i, j);
+			}
+		}
+		return Matrix(B.rows, A.columns, answerN);
+	}
+
+	Matrix Matrix::subtract(Matrix& A, real B)
+	{
+		int size = A.rows * A.columns;
+		Vector answerN;
+		answerN.resize(size, 0);
+		for (int i = 0; i < A.rows; ++i)
+		{
+			for (int j = 0; j < A.columns; ++j)
+			{
+				answerN[(i * A.columns) + j] = A.get(i, j) - B;
+			}
+		}
+		return Matrix(A.rows, A.columns, answerN);
+	}
+
+	Matrix Matrix::subtract(real b, Matrix& a)
+	{
+		Matrix temp = multiply(-1, a);
+		return add(temp, b);
+	}
+
+	Matrix Matrix::divide(Matrix& p, Matrix& q)
+	{
+		Matrix inv = q.inverse();
+		return p.multiply(p, inv);
+	}
+
+	Matrix Matrix::divide(Matrix& p2, real q)
+	{
+		return p2.multiply(p2, 1.0/q);
+	}
+
+	Matrix Matrix::divide(real q, Matrix& p2)
+	{
+		return p2.multiply(p2, 1.0 / q);
+	}
+
+	//Overloaded operators:
+	bool Matrix::operator==(Matrix& rhs) {
+		return (element == rhs.element &&
+			rows == rhs.rows && columns == rhs.columns);
+	}
+	bool Matrix::operator!=(Matrix& rhs) { return !(*this == rhs); }
+	Matrix Matrix::operator*=(Matrix& rhs) { *this = multiply(*this, rhs); return*this; }
+	Matrix Matrix::operator*=(real x) { *this = multiply(*this, x); return *this; }
+	Matrix Matrix::operator+=(Matrix& rhs) { *this = add(*this, rhs); return*this; }
+	Matrix Matrix::operator+=(real x) { *this = add(*this, x); return *this; }
+	Matrix Matrix::operator+(Matrix& rhs) { return add(*this, rhs); }
+	Matrix Matrix::operator+(real x) { return add(*this, x); }
+	Matrix Matrix::operator-=(Matrix& rhs) { *this = subtract(*this, rhs); return*this; }
+	Matrix Matrix::operator-=(real x) { *this = subtract(*this, x); return *this; }
+	Matrix operator+(Matrix& lhs, Matrix& rhs) { return lhs.add(lhs, rhs); }
+	Matrix operator+(Matrix& lhs, real x) { return lhs.add(lhs, x); }
+	Matrix operator+(real x, Matrix& rhs) { return rhs.add(x, rhs); }
+	Matrix operator-(Matrix& lhs, Matrix& rhs) { return lhs.subtract(lhs, rhs); }
+	Matrix operator-(Matrix& lhs, real x) { return lhs.subtract(lhs, x); }
+	Matrix operator-(real x, Matrix& rhs) { return rhs.subtract(x, rhs); }
+	Matrix operator*(Matrix& lhs, Matrix& rhs) { return lhs.multiply(lhs, rhs); }
+	Matrix operator*(Matrix& lhs, real x) { return lhs.multiply(lhs, x); }
+	Matrix operator*(real x, Matrix& rhs) { return rhs.multiply(x, rhs); }
+	Matrix operator/(Matrix& lhs, Matrix& rhs) { return lhs.divide(lhs, rhs); }
+	Matrix operator/(Matrix& lhs, real x) { return lhs.divide(lhs, x); }
+	Matrix operator/(real x, Matrix& rhs) { return rhs.divide(x, rhs); }
 }

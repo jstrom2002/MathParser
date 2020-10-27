@@ -50,7 +50,7 @@ namespace MathParser
 		for (int i = 0; i < v2.size(); ++i)
 			vnew.push_back(v2[i]);		
 		Vector v3(vnew);
-		Matrix M = v3.toMatrix();
+		Matrix M(v3);
 		return linearLeastSquaresRegression(M);
 	}
 

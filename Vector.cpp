@@ -1,6 +1,7 @@
 #include "Vector.h"
 #include "Matrix.h"
 #include "Polynomial.h"
+#include "ComplexNumber.h"
 #include <limits>
 #include <iomanip>
 
@@ -32,6 +33,13 @@ namespace MathParser
 	{
 	}
 
+	Vector::Vector(ComplexNumber z)
+	{
+		v.resize(2, 0);
+		v[0] = z.re();
+		v[1] = z.im();
+	}
+
 	Vector::Vector(Polynomial p) 
 	{
 		resize(p.size(),0);
@@ -44,28 +52,6 @@ namespace MathParser
 		for (int i = 0; i < v.size(); ++i)
 			if (std::abs(v[i]) < 0) 
 				v.erase(v.begin() + i); 
-	}
-
-	Matrix Vector::toDiagonalMatrix() 
-	{
-		Matrix M(v.size(), v.size());
-		for (int i = 0; i < size(); ++i) 		
-			M.set(i, i, v[i]);		
-		return M;
-	}
-
-	Matrix Vector::toMatrix() 
-	{ 
-		return Matrix(1, size(), v); 
-	}
-
-	Matrix Vector::toMatrix(int r, int c) 
-	{
-		Matrix M(r, c);
-		M.identity();
-		for (int i = 0; i < size(); ++i) 
-			M.set(0, i, v[i]);		
-		return M;
 	}
 
 	std::string Vector::to_string(int precision) 

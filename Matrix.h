@@ -1,5 +1,5 @@
 /**
-*   Generic matrix class.
+*   Generic matrix class. All matrices contain real valued members.
 */
 
 #pragma once
@@ -26,18 +26,35 @@ namespace MathParser
 		Matrix(int n);
 		Matrix(int row, int col);
 		Matrix(int row, int col, Vector element2);
+		Matrix(Vector element2);
 		Matrix(std::vector<Vector> elm);
-		template <class T>
-		Matrix(int row, int col, std::vector<T> element2);	
+		Matrix(int row, int col, std::vector<real> element2);	
 
-		bool operator==(Matrix& rhs) { 
-			return (element == rhs.element && rows == rhs.rows &&
-				columns == rhs.columns);
-		}
+		// Overloaded operators:
+		bool operator==(Matrix& rhs);
+		bool operator!=(Matrix& rhs);
+		Matrix operator*=(Matrix& rhs);
+		Matrix operator*=(real x);
+		Matrix operator+=(Matrix& rhs);
+		Matrix operator+=(real x);
+		Matrix operator+(Matrix& rhs);
+		Matrix operator+(real x);
+		Matrix operator-=(Matrix& rhs);
+		Matrix operator-=(real x);
+		friend Matrix operator+(Matrix& lhs, Matrix& rhs);
+		friend Matrix operator+(Matrix& lhs, real x);
+		friend Matrix operator+(real x, Matrix& rhs);
+		friend Matrix operator-(Matrix& lhs, Matrix& rhs);
+		friend Matrix operator-(Matrix& lhs, real x);
+		friend Matrix operator-(real x, Matrix& rhs);
+		friend Matrix operator*(Matrix& lhs, Matrix& rhs);
+		friend Matrix operator*(Matrix& lhs, real x);
+		friend Matrix operator*(real x, Matrix& rhs);
+		friend Matrix operator/(Matrix& lhs, Matrix& rhs);
+		friend Matrix operator/(Matrix& lhs, real x);
+		friend Matrix operator/(real x, Matrix& rhs);
 
-		//function prototypes
-		Matrix add(Matrix A, Matrix B);
-		Matrix add(Matrix A, real B);
+		// Class method prototypes:
 		Matrix addColumn(Vector vec);
 		Matrix addColumn(int j, Vector vec);
 		Matrix addRow(Vector vec);
@@ -76,19 +93,18 @@ namespace MathParser
 		Vector diagonal();
 		Matrix directSum(Matrix A, Matrix B);
 		Matrix dominantEigenvector();
-		real dominantEigenvalue();
+		real dominantEigenvalue(int iterations = 500);
 		Vector eigenvaluesByGaussianElimination();
 		Vector eigenvaluesRealExact();
 		Vector eigenvaluesNumerical();
-		std::vector<ComplexNumber> eigenvaluesRealAndComplexExact();
+		std::vector<ComplexNumber> eigenvaluesRealAndComplexExact(int iterations=10000);
 		Matrix eigenvalueMatrix();
 		Matrix eigenvalueMatrix(Matrix A, int loops);
-		Matrix eigenvectors();
+		Matrix eigenvectors(int iterations = 500);
 		Matrix expandToUpperLeft(int r, int c);
 		Matrix expandToLowerRight(int r, int c);
 		Matrix extendRows(int r);
 		Matrix extendColumns(int c);
-		Matrix exponent(Matrix A, int b);
 		Vector findRow(Vector x);
 		Vector findColumn(Vector x);
 		real FTestStatistic();
@@ -113,16 +129,13 @@ namespace MathParser
 		bool isIntegerMatrix();
 		bool isLinearlyIndependent();
 		bool isOrthonormal();
-		bool isOverDetermined();
 		bool isInconsistent(Vector b);
 		bool isPositiveDefinite();
 		bool isPositiveSemidefinite();
-		bool isSingular();
 		bool isSymmetric();
-		bool isUnderDetermined();
 		std::vector<int> JacobiIndexing();
 		Matrix JacobiRotationMatrix(int p, int q, real c, real s);
-		std::vector<Matrix> JacobiTransformation();
+		std::vector<Matrix> JacobiTransformation(highpUint limit = 10000);
 		Matrix L();
 		std::vector<Matrix> LDL();
 		int largestElement();
@@ -134,8 +147,6 @@ namespace MathParser
 		std::vector<Matrix> LU();
 		real mean();
 		Vector meanVector();
-		Matrix multiply(Matrix A, Matrix B);
-		Matrix multiply(Matrix A, real B);
 		void multiplyRow(int rw, real n);
 		void multiplyRow(int rw, Vector n);
 		real norm();
@@ -146,20 +157,6 @@ namespace MathParser
 		Vector normalizedRow(int r);
 		int nullity();
 		Matrix nullSpace();
-		Matrix operator*=(Matrix rhs);
-		Matrix operator*=(real x);
-		Matrix operator*(Matrix rhs);
-		Matrix operator*(real x);
-		Matrix operator+=(Matrix rhs);
-		Matrix operator+=(real x);
-		Matrix operator+(Matrix rhs);
-		Matrix operator+(real x);
-		Matrix operator-=(Matrix rhs);
-		Matrix operator-=(real x);
-		Matrix operator-(Matrix rhs);
-		Matrix operator-(real x);
-		bool operator==(Matrix B);
-		Matrix outerProduct(Matrix A, Matrix B);
 		real pNorm(real p);
 		std::vector<int> pivotColumns();
 		Matrix populationCovarianceMatrix();
@@ -203,11 +200,8 @@ namespace MathParser
 		void setRow(int rw, Vector n);
 		void setColumn(int col, Vector n);
 		int size();
-		bool solutionCheck(Vector x, Vector b);
 		Vector solve(Vector b);
 		Matrix submatrix(int i, int j, int i2, int j2);
-		Matrix subtract(Matrix A, Matrix B);
-		Matrix subtract(Matrix A, real B);
 		real sum();
 		real sumAll();
 		real sumColumn(int c);
@@ -231,19 +225,36 @@ namespace MathParser
 		Matrix Vandermonde();
 		Matrix varianceMatrix();
 		bool zeroInDiag();
+
+		private:
+			// Helper functions to reduce reusing code for operator overloads.
+			Matrix add(Matrix& a, Matrix& b);
+			Matrix add(Matrix& a, real  b);
+			Matrix add(real b, Matrix& a);
+			Matrix subtract(Matrix& a, Matrix& b);
+			Matrix subtract(Matrix& a, real b);
+			Matrix subtract(real b, Matrix& a);
+			Matrix multiply(Matrix& a, Matrix& b);
+			Matrix multiply(Matrix& a, real b);
+			Matrix multiply(real b, Matrix& a);
+			Matrix divide(Matrix& p, Matrix& q);
+			Matrix divide(Matrix& p2, real q);
+			Matrix divide(real q, Matrix& p2);
 	};
 
 	Matrix directionMatrix(Vector v);
 	Matrix identityMatrix(int n);
 	Matrix identityMatrix(int n, int m);
+	Matrix outerProduct(Matrix& A, Matrix& B);
 	Matrix positionMatrix(Vector v);
 	Matrix rotationMatrix(Vector v);
 	Matrix scalingMatrix(Vector v);
 	Matrix translationMatrix(Vector v);
 	Matrix Vandermonde(Polynomial p);
+	Matrix wedgeProduct(Matrix& A, Matrix& B);
 }
 
 namespace std
 {
-	MathParser::Matrix pow(MathParser::Matrix m, MathParser::real x);
+	MathParser::Matrix pow(MathParser::Matrix m, int x);
 }

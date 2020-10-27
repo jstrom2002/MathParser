@@ -611,9 +611,9 @@ namespace MathParser
 		return answer;
 	}
 
-	real integrateSimpsonsRule(real a, real b, Function f) 
-	{// Numerical integration hardcoded to use 2000 abscissa points.
-		real h = std::abs(b - a) / 2000.0;
+	real integrateSimpsonsRule(real a, real b, Function f, real subdivisions) 
+	{
+		real h = std::abs(b - a) / subdivisions;
 		real counter = a;
 		int index = 0;
 		real answer = 0;
@@ -641,7 +641,7 @@ namespace MathParser
 
 	real integrateGaussLegendreQuadrature(real a, real b, Function f) 
 	{//uses Chebyshev-Gauss quadrature rules -- slower but more precise
-		const int n = 100;	//use n abscissa points, the roots of Legendre Polynomial P_n(x)
+		const int n = 100;//use n abscissa points, the roots of Legendre Polynomial P_n(x)
 
 		const real lastbit = 0.5 * (b - a);
 		const real secondbit = 0.5 * (a + b);

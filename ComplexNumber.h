@@ -4,6 +4,7 @@
 
 #pragma once
 #include "Types.h"
+#include "Vector.h"
 #include <complex>
 #include <tgmath.h>
 
@@ -20,10 +21,12 @@ namespace MathParser
 		ComplexNumber(real Re) : z(Re, 0) {}
 		ComplexNumber(real Re, real Im) : z(Re, Im) {}
 		ComplexNumber(std::complex<real> z1) : z(z1) {}
+		ComplexNumber(Vector v);
 
 		real operator [](int i) const { return z._Val[i]; }
 		real& operator [](int i) { return z._Val[0]; }
 		bool operator==(const ComplexNumber& rhs){return z == rhs.z;}
+		bool operator!=(const ComplexNumber& rhs){return !(z == rhs.z);}
 		ComplexNumber& operator*=(ComplexNumber rhs);
 		ComplexNumber& operator*=(real x);
 		ComplexNumber& operator/=(ComplexNumber rhs);
@@ -68,6 +71,6 @@ namespace MathParser
 namespace std
 {
 	// Wrapper for standard 'pow()' function to use ComplexNumber class.
-	MathParser::ComplexNumber pow(MathParser::ComplexNumber z, MathParser::real b);
 	MathParser::ComplexNumber pow(MathParser::ComplexNumber z, MathParser::ComplexNumber b);
+	template <class T> MathParser::ComplexNumber pow(MathParser::ComplexNumber z, T b);
 }

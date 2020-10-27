@@ -5,6 +5,7 @@
 #include "Function.h"
 #include "Parsing.h"
 #include "StringUtils.h"
+#include "Calculus.h"
 #include <string>
 #include <algorithm>
 #include <regex>
@@ -27,6 +28,22 @@ namespace MathParser
 			std::vector<real> vals = ParseNInputNumbers(
 				str.substr(str.find("("), str.find(")")));
 			LAST = savedFunctions[idx].evaluate(vals, this->precision);
+			return to_string_precision(LAST, this->precision);
+		}
+		else if (str.find("derivative(") != std::string::npos)
+		{
+			std::vector<real> vals = ParseNInputNumbers(
+				str.substr(str.find("("), str.find(")")));
+			LAST = nthDerivative1D(vals[0],vals[1],savedFunctions[idx], vals[2]);
+			return to_string_precision(LAST, this->precision);
+		}
+		else if (str.find("integral(") != std::string::npos)
+		{
+			std::vector<real> vals = ParseNInputNumbers(
+				str.substr(str.find("("), str.find(")")));
+			//LAST = integrateSimpsonsRule(vals[0], vals[1], savedFunctions[idx], vals[2]);
+			//LAST = integrateGaussLegendreQuadrature(vals[0], vals[1], savedFunctions[idx]);
+			LAST = integrateGaussKronodQuadrature(vals[0], vals[1], savedFunctions[idx]);
 			return to_string_precision(LAST, this->precision);
 		}
 

@@ -7,14 +7,25 @@ namespace std
 		return std::pow(std::complex(z.re(), z.im()), std::complex(b.re(), b.im()));
 	}
 
-	MathParser::ComplexNumber pow(MathParser::ComplexNumber z, MathParser::real b)
+	template <class T> MathParser::ComplexNumber pow(MathParser::ComplexNumber z, T b)
 	{
 		return std::pow(std::complex(z.re(), z.im()), b);
 	}
+	template MathParser::ComplexNumber pow(MathParser::ComplexNumber z, MathParser::real b);
+	template MathParser::ComplexNumber pow(MathParser::ComplexNumber z, int b);
 }
 
 namespace MathParser
 {
+	ComplexNumber::ComplexNumber(Vector v)
+	{
+		size_t sz = v.size();
+		if (sz >= 1)
+			z = std::complex<real>(v[0], v[1]);
+		else if (sz > 0)
+			z = std::complex<real>(v[0], 0);
+	}
+
 	ComplexNumber ComplexNumber::add(ComplexNumber a, ComplexNumber b){	return ComplexNumber(a.z + b.z);}
 	ComplexNumber ComplexNumber::add(ComplexNumber a, real  b){return ComplexNumber(a.z + b);}
 	ComplexNumber ComplexNumber::add(real b, ComplexNumber a){return ComplexNumber(a.z + b);}

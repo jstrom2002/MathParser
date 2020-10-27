@@ -21,6 +21,7 @@ namespace MathParser
 		Vector(int i) { v.resize(i, 0); }
 		Vector(std::vector<real> v);
 		Vector(Polynomial p);
+		Vector(ComplexNumber p);
 		
 		// Overloads of std namespace functions for std::vector class,
 		// written for brevity (ie users can use 'Vector::begin()' instead
@@ -80,9 +81,6 @@ namespace MathParser
 		real RMS();
 		real sum();
 		real sumexp(real p);
-		Matrix toDiagonalMatrix();
-		Matrix toMatrix();
-		Matrix toMatrix(int r, int c);
 		virtual std::string to_string(int precision = 4);
 
 	private:

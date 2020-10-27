@@ -3,6 +3,8 @@
 #include "StringUtils.h"
 #include "Parsing.h"
 #include "Polynomial.h"
+#include "Matrix.h"
+#include "ImageProcessing.h"
 #include <iostream>
 #include <ctime>
 
@@ -493,8 +495,8 @@ namespace MathParser
 	{	
 		// Don't forget the input real array must be from lowest-to-highest
 		// exponent, the following initializes the polynomial 'x^2 - 5x + 6'.
-		std::vector<real> roots = Polynomial(std::vector<real>{6, -5, 1}).realRoots();
-		if (roots.size() != 2 && roots[0] != 3 && roots[1] != 2)
+		std::vector<real> roots = Polynomial(std::vector<real>{1, -5, 6}).realRoots();
+		if (roots.size() != 2 || roots[0] != 3 || roots[1] != 2)
 		{
 			std::cout << "expected roots: {3,2}" << std::endl;
 			std::cout << "test results = {";
@@ -503,12 +505,13 @@ namespace MathParser
 				std::cout << roots[i];
 				if(i<roots.size()-1)
 					std::cout << ",";
+				return false;
 			}
 			std::cout << "}" << std::endl;
 		}
 
 		roots = Polynomial(std::vector<real>{-2,-1,-2,1}).realRoots();
-		if (roots.size() != 3 && roots[0] != 2 && roots[1] != 1 && roots[2] != -1)
+		if (roots.size() != 3 || roots[0] != 2 || roots[1] != 1 || roots[2] != -1)
 		{
 			std::cout << "expected roots: {2,1,-1}" << std::endl;
 			std::cout << "test results = {";
@@ -517,9 +520,86 @@ namespace MathParser
 				std::cout << roots[i];
 				if (i < roots.size() - 1)
 					std::cout << ",";
+				return false;
 			}
 			std::cout << "}" << std::endl;
 		}
+
+		return true;
+	}
+
+	bool UnitTests::matrixClassTest()
+	{
+		std::vector<real> p = std::vector<real>{
+			1, 2, 2, 0, 
+			0, 1, 3, 1, 
+			0, 1, 2, 1, 
+			1, 2, 2, -1
+		};
+		std::vector<real> p2 = std::vector<real>{
+			1.0, 0.8, 1.0, 1.0, 0.8, 1.0,
+			1.0, 0.5, 0.3, 0.0, 0.5, 1.0,
+			1.0, 0.3, 0.2, 0.0, 0.3, 1.0,
+			1.0, 0.2, 0.0, 0.0, 0.2, 1.0,
+			1.0, 0.3, 0.2, 0.0, 0.3, 1.0,
+			1.0, 0.8, 1.0, 1.0, 0.8, 1.0
+		};
+
+		std::vector<real> p3 = std::vector<real>{
+			1, -2, 2, 4,
+			2, -4, 5, 9,
+			3, -6, 8, 14,
+			5, -10, 12, 22
+		};
+		std::vector<real> p4 = std::vector<real>{
+			3,2,2,
+			2,3,-2
+		};
+		Matrix A(4, 4, p);
+		Matrix B(6, 6, p2);
+		Matrix C(4, 4, p3);
+		Matrix D(2, 3, p4);
+		Matrix Mat2 = GaussianKernel2D(5,1);
+
+		// Test: matrix element accessing with the 'get()' command.
+		for(int i=0; i<6; ++i)
+			for(int j=0; j<6; ++j)
+				if (B.get(i, j) != p2[i * 6 + j])
+				{
+					std::cout << "test result: " << B.get(i, j) << std::endl;
+					std::cout << "expected result: " << p2[i * 6 + j] << std::endl;
+					return false;
+				}
+
+		// Test: Gauss-Jordan Elimination (can be extremely slow or not converge at all)
+		Matrix GJE = A.GaussianElimination();
+		Matrix eye = identityMatrix(GJE.rows, GJE.columns);
+		if (GJE != eye)
+		{
+			std::cout << "test result: " << GJE.to_string() << std::endl;
+			std::cout << "expected result: " << eye.to_string()
+				<< std::endl;
+			return false;
+		}
+
+		return true;
+	}
+
+	bool UnitTests::imageProcessingTest()
+	{
+		// Test 1: load .bmp file, then apply Gaussian blur filter and save results to file.
+		IMAGE bmp("cat.bmp");
+		Matrix bwImg = bmp.getBlackAndWhiteMatrix();
+		Matrix kernel = GaussianKernel2D(5, 1);
+		Matrix Mat2 = kernel * bwImg;
+		IMAGE bmp2(Mat2);
+		bmp2.transpose();
+		bmp2.saveImage("test1.bmp");
+		//BMPtoText("test1.bmp");//also do hex dump of file.
+
+		// Test 2:
+		//Matrix Mat = testMatrix();
+		//IMAGE bmp2(Mat);
 
 		return true;
 	}
@@ -528,82 +608,96 @@ namespace MathParser
 	{
 		bool passed = false;
 
-		// Run replaceString test.
-		if (!(passed = replaceStringTest()))
+		//// Run replaceString test.
+		//if (!(passed = replaceStringTest()))
+		//{
+		//	std::cout << "ERROR! Replace string test failed." << std::endl;
+		//	return;
+		//}
+
+		//// Find nearest real test.
+		//if (!(passed = findNearestRealTest()))
+		//{
+		//	std::cout << "ERROR! Find nearest real test failed." << std::endl;
+		//	return;
+		//}
+
+		//// Get nearest real test.
+		//if (!(passed = getNearestRealTest()))
+		//{
+		//	std::cout << "ERROR! Get nearest real test failed." << std::endl;
+		//	return;
+		//}
+
+		//// Find count operators test.
+		//if (!(passed = countOperatorsTest()))
+		//{
+		//	std::cout << "ERROR! count operators test failed." << std::endl;
+		//	return;
+		//}
+
+		//// Find count complex numbers test.
+		//if (!(passed = countComplexNumbersTest()))
+		//{
+		//	std::cout << "ERROR! count complex numbers test failed." << std::endl;
+		//	return;
+		//}
+
+		//// Run parseNInputNumbers test.
+		//if (!(passed = parseNInputNumbersTest()))
+		//{
+		//	std::cout << "ERROR! parseNInputNumbers test failed." << std::endl;
+		//	return;
+		//}
+
+		//// Run processTwoTermOperation test.
+		//if (!(passed = processTwoTermOperationTest()))
+		//{
+		//	std::cout << "ERROR! processTwoTermOperation test failed." << std::endl;
+		//	return;
+		//}
+
+		//// Run calculateArithmetic test.
+		//if (!(passed = calculateArithmeticTest()))
+		//{
+		//	std::cout << "ERROR! Calculate arithmetic test failed." << std::endl;
+		//	return;
+		//}
+
+		//// Run parser test.
+		//if (!(passed = parserTest()))
+		//{
+		//	std::cout << "ERROR! Parser test failed." << std::endl;
+		//	return;
+		//}
+
+		//// Run polynomial arithmetic test.
+		//if (!(passed = polynomialArithmeticTest()))
+		//{
+		//	std::cout << "ERROR! Polynomial arithmetic test failed." << std::endl;
+		//	return;
+		//}
+
+		//// Run polynomial root test.
+		//if (!(passed = rootTest()))
+		//{
+		//	std::cout << "ERROR! Root test failed." << std::endl;
+		//	return;
+		//}
+
+		// Run matrix class test.
+		if (!(passed = matrixClassTest()))
 		{
-			std::cout << "ERROR! Replace string test failed." << std::endl;
+			std::cout << "ERROR! Matrix class test failed." << std::endl;
 			return;
 		}
 
-		// Find nearest real test.
-		if (!(passed = findNearestRealTest()))
-		{
-			std::cout << "ERROR! Find nearest real test failed." << std::endl;
-			return;
-		}
-
-		// Get nearest real test.
-		if (!(passed = getNearestRealTest()))
-		{
-			std::cout << "ERROR! Get nearest real test failed." << std::endl;
-			return;
-		}
-
-		// Find count operators test.
-		if (!(passed = countOperatorsTest()))
-		{
-			std::cout << "ERROR! count operators test failed." << std::endl;
-			return;
-		}
-
-		// Find count complex numbers test.
-		if (!(passed = countComplexNumbersTest()))
-		{
-			std::cout << "ERROR! count complex numbers test failed." << std::endl;
-			return;
-		}
-
-		// Run parseNInputNumbers test.
-		if (!(passed = parseNInputNumbersTest()))
-		{
-			std::cout << "ERROR! parseNInputNumbers test failed." << std::endl;
-			return;
-		}
-
-		// Run processTwoTermOperation test.
-		if (!(passed = processTwoTermOperationTest()))
-		{
-			std::cout << "ERROR! processTwoTermOperation test failed." << std::endl;
-			return;
-		}
-
-		// Run calculateArithmetic test.
-		if (!(passed = calculateArithmeticTest()))
-		{
-			std::cout << "ERROR! Calculate arithmetic test failed." << std::endl;
-			return;
-		}
-
-		// Run parser test.
-		if (!(passed = parserTest()))
-		{
-			std::cout << "ERROR! Parser test failed." << std::endl;
-			return;
-		}
-
-		// Run polynomial arithmetic test.
-		if (!(passed = polynomialArithmeticTest()))
-		{
-			std::cout << "ERROR! Polynomial arithmetic test failed." << std::endl;
-			return;
-		}
-
-		// Run polynomial root test.
-		if (!(passed = rootTest()))
-		{
-			std::cout << "ERROR! Root test failed." << std::endl;
-			return;
-		}
+		//// Run image processing test.
+		//if (!(passed = imageProcessingTest()))
+		//{
+		//	std::cout << "ERROR! Image processing test failed." << std::endl;
+		//	return;
+		//}
 
 		std::cout << "All tests successfully passed." << std::endl;
 	}

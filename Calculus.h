@@ -21,7 +21,7 @@ namespace MathParser
 	// Functions for integration/differentiation schemes.
 	real nthDerivative1D(real D, real x, Function f, highp epsilon = 0.000001);
 	real nthPartialDerivative(real D, int wrt, Vector x, Function f,highp epsilon = 0.000001);
-	real integrateSimpsonsRule(real a, real b, Function f);
+	real integrateSimpsonsRule(real a, real b, Function f, real subdivisions = 2000.0);
 	real integrateGaussLegendreQuadrature(real a, real b, Function f);
 	real integrateGaussLegendreQuadrature(real a, real b, Function f, Vector vals, int pos);
 	real integrateGaussHermiteQuadrature(Function f);

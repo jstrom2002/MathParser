@@ -17,6 +17,8 @@ namespace MathParser
 		bool countComplexNumbersTest();
 		bool findNearestRealTest();
 		bool getNearestRealTest();
+		bool imageProcessingTest();
+		bool matrixClassTest();
 		bool parseNInputNumbersTest();
 		bool parserTest();
 		bool polynomialArithmeticTest();

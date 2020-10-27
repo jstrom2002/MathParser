@@ -85,6 +85,8 @@ namespace MathParser
 
 		std::cout << "List of methods for function class: " << std::endl;
 		std::cout << ".evaluate(real)" << std::endl;
+		std::cout << ".derivative(real D, real x, real epsilon)" << std::endl;
+		std::cout << ".integral(real a, real b, int abscissaPoints)" << std::endl;
 		std::cout << std::endl;
 
 		std::cout << "List of methods for polynomial class: " << std::endl;
