@@ -70,7 +70,6 @@ namespace MathParser
 		void addToColumn(int cl, Vector n);
 		real adjustedRsquared();
 		Matrix autoCorrelation(Matrix A);
-		real maxValue();
 		bool canSwapOutZeroDiagonals();
 		Matrix characteristicMatrix();
 		Polynomial characteristicPolynomial();
@@ -122,7 +121,6 @@ namespace MathParser
 		Matrix GramMatrix();
 		Matrix GramMatrix(Matrix M);
 		Matrix GramSchmidt();
-		Matrix HadamardProduct(Matrix A, Matrix B);
 		std::vector<Matrix> HouseholderQR();
 		void identity();
 		Matrix inverse();
@@ -146,11 +144,15 @@ namespace MathParser
 		Matrix leastSquares(Matrix X, Matrix Y);
 		Function leastSquares();
 		Matrix leastSquaresMatrix();
+		void loadBMP(std::string filename);
+		void loadCSV(std::string filename);
 		Matrix lowerTriangularize();
 		Matrix lowerHessenbergForm();
 		std::vector<Matrix> LU();
+		real maxValue();
 		real mean();
 		Vector meanVector();
+		real minValue();
 		void multiplyRow(int rw, real n);
 		void multiplyRow(int rw, Vector n);
 		real norm();
@@ -178,6 +180,7 @@ namespace MathParser
 		void removeRow(int n);
 		void removeZeroRows();
 		void removeZeroColumns();
+		void reshape(int r, int c);
 		Vector residuals();
 		void reverseColumn(int n);
 		void reverseRow(int n);
@@ -197,6 +200,8 @@ namespace MathParser
 		real Rsquared();
 		Matrix sampleCovarianceMatrix();
 		real sampleStandardDeviation();
+		void saveBMP(std::string filename, int colorDepth=8);
+		void saveCSV(std::string filename);
 		void setColumnNonZeroValues(int col, real x);
 		void setRowNonZeroValues(int rw, real x);
 		void setRow(int rw, Vector n);
@@ -205,7 +210,6 @@ namespace MathParser
 		Vector solve(Vector b);
 		Matrix submatrix(int i, int j, int i2, int j2);
 		real sum();
-		real sumAll();
 		real sumColumn(int c);
 		real sumRow(int r);
 		real sumSquares();
@@ -246,9 +250,11 @@ namespace MathParser
 			std::vector<int> pivotColumns();
 	};
 
+	Matrix convolve(Matrix kernel, Matrix img);
 	Matrix directionMatrix(Vector v);
 	Matrix identityMatrix(int n);
 	Matrix identityMatrix(int n, int m);
+	Matrix HadamardProduct(Matrix A, Matrix B);
 	Matrix outerProduct(Matrix& A, Matrix& B);
 	Matrix positionMatrix(Vector v);
 	Matrix rotationMatrix(Vector v);

@@ -17,6 +17,42 @@ namespace MathParser
 	{
 	}
 
+	void MathParser::loadFile(std::string str)
+	{
+		// Remove ')' around outside of filename.
+		while (str[str.length() - 1] == ')')
+			str = str.substr(0, str.length() - 1);
+
+		// Remove all chars before "(" from from beginning of filename.
+		str = str.substr(str.find("(")+1);
+
+		// Handle file loading according to file extension.
+		std::string ext = getExtension(str);
+		if (str.find(".csv"))
+		{
+			Matrix M;
+			M.loadCSV(str);
+			savedMatrices.push_back(M);
+		}
+		if (str.find(".bmp"))
+		{
+			Matrix M;
+			M.loadBMP(str);
+			savedMatrices.push_back(M);
+		}
+	}
+
+	void MathParser::saveFile(std::string str)
+	{
+	}
+
+	std::string MathParser::parseMatrixReference(std::string str, int idx)
+	{
+		if (idx >= savedFunctions.size())
+			return "";
+
+	}
+
 	std::string MathParser::parseFunctionReference(std::string str, int idx)
 	{
 		if (idx >= savedFunctions.size())
@@ -106,8 +142,28 @@ namespace MathParser
 		std::string newline = "\n";
 		for (int i = 0; i < savedFunctions.size(); ++i)
 		{
-			std::string funcName = savedFunctions[i].to_string();
+			std::string funcName = savedFunctions[i].to_string(this->precision);
 			funcName.insert(funcName.begin() + 1, '0' + i);
+			str.append(funcName + newline);
+		}
+
+		return str;
+	}
+
+	std::string MathParser::printSavedMatrices()
+	{
+		std::string str = "";
+		if (!savedMatrices.size())
+			return str;
+
+		std::string newline = "\n";
+		for (int i = 0; i < savedMatrices.size(); ++i)
+		{
+			std::string funcName = "M";
+			funcName.push_back('0' + i);
+			funcName.append(":");
+			funcName.append(newline);
+			funcName.append(savedMatrices[i].to_string(this->precision));
 			str.append(funcName + newline);
 		}
 
@@ -125,7 +181,7 @@ namespace MathParser
 		{
 			std::string funcName = "p(x) = ";
 			funcName.insert(funcName.begin() + 1, '0' + i);
-			funcName.append(savedPolynomials[i].to_string());
+			funcName.append(savedPolynomials[i].to_string(this->precision));
 			str.append(funcName + newline);
 		}
 
@@ -144,9 +200,12 @@ namespace MathParser
 			str = replaceString(str, "LAST", laststr);
 		}
 
-		// Check for reference to saved objects
+		// Check for reference to saved objects, referenced by a letter then a number.
+		// (ie 'M0.eigenvalues()').
 		if (std::regex_match(str, std::regex("[a-z][0-9]\..*")) ||
-			std::regex_match(str, std::regex("[a-z][0-9][0-9]\..*")))
+			std::regex_match(str, std::regex("[a-z][0-9][0-9]\..*")) ||
+			std::regex_match(str, std::regex("[A-Z][0-9]\..*")) ||
+			std::regex_match(str, std::regex("[A-Z][0-9][0-9]\..*")))
 		{
 			// Get index of referenced object.
 			std::string prestr = str.substr(0, str.find(")"));
@@ -159,6 +218,8 @@ namespace MathParser
 				return parseFunctionReference(afterDot, idx);
 			else if (prestr[0] == 'p')// Find reference to saved polynomial.
 				return parsePolynomialReference(afterDot, idx);
+			else if (prestr[0] == 'M')// Find reference to saved matrix.
+				return parseMatrixReference(afterDot, idx);
 		}
 
 		// Check for declared functions, polynomials, etc.
@@ -166,10 +227,17 @@ namespace MathParser
 		{
 			// Save function or polynomial.
 			if (str.find("p(") != std::string::npos)			
-				savedPolynomials.push_back(Polynomial(ParsePolynomial(str)));			
+				savedPolynomials.push_back(ParsePolynomial(str));			
 			else			
-				savedFunctions.push_back(Function(ParseFunction(str)));	
+				savedFunctions.push_back(ParseFunction(str));	
 
+			return "";
+		}
+
+		// Check for declared matrices.
+		else if (str.find("[") != std::string::npos && str.find("]") != std::string::npos)
+		{
+			savedMatrices.push_back(ParseMatrix(str));
 			return "";
 		}
 
@@ -349,7 +417,11 @@ namespace MathParser
 				i = str.length();
 			}
 		}
-		if (position.size() == 0) { answer.push_back(Function(ParseFunction(str))); return answer; }//if there is only one single value in the string
+		if (!position.size())
+		{ //if there is only one single value in the string
+			answer.push_back(Function(ParseFunction(str))); 
+			return answer; 
+		}
 		if (position.size() > 0) {//if there are multiple values in the string
 			std::string tempStr = str.substr(0, position[0]);   //get first substring
 			answer.push_back(Function(ParseFunction(tempStr)));
@@ -361,5 +433,34 @@ namespace MathParser
 			answer.push_back(Function(ParseFunction(tempStr)));
 		}
 		return answer;
+	}
+
+	Matrix MathParser::ParseMatrix(std::string input)
+	{
+		std::vector<real> vals;
+		int rows = 0;
+		int cols = 0;
+
+		input = removeSpaces(input);
+
+		// Remove beginning and ending brackets (']' chars).
+		while (input[0] == '[')
+			input = input.substr(1);
+		while (input[input.length()-1] == ']')
+			input = input.substr(0, input.length()-1);
+
+		// Tokenize by end of row marker ';'.
+		std::vector<std::string> strs = tokenize(input, ";");
+		rows = strs.size();
+		for (int i = 0; i < strs.size(); ++i)
+		{
+			// Parse the next row's string, then add those values to the output array.
+			std::vector<real> temp = ParseNInputNumbers(strs[i]);
+			if (temp.size() > cols)
+				cols = temp.size();
+			vals.insert(std::end(vals), std::begin(temp), std::end(temp));
+		}
+
+		return Matrix(rows, cols, vals);
 	}
 }

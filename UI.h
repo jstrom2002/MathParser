@@ -14,6 +14,7 @@ namespace MathParser
 		char inputText[256];
 		std::string outputText;
 		std::string functionString;
+		std::string matricesString;
 		std::string polynomialString;
 		MathParser parser;
 

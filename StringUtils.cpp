@@ -225,4 +225,32 @@ namespace MathParser
 
 		return result;
 	}
+
+	std::string getDirectory(std::string str) 
+	{
+		if (str.find("/") != std::string::npos) 
+			str = str.substr(0, str.rfind("/") + 1);
+		if (str.find("\\") != std::string::npos)	
+			str = str.substr(0, str.rfind("\\") + 1);
+		return "";
+	}
+
+	std::string getExtension(std::string str) 
+	{// File extensions will be converted to lowercase letters.
+		std::string str2 = str;
+		std::transform(str2.begin(), str2.end(), str2.begin(), std::tolower);
+		if (str.find(".") == std::string::npos)
+			return "";
+		str = str.substr(str.rfind("."));
+		return str;
+	}
+
+	std::string getFilename(std::string str) 
+	{
+		while (str.rfind("/") != std::string::npos && str.length() > 0)
+			str = str.substr(str.rfind("/") + 1);		
+		while (str.rfind("\\") != std::string::npos && str.length() > 0) 
+			str = str.substr(str.rfind("\\") + 1);		
+		return str;
+	}
 }

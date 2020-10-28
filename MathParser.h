@@ -7,13 +7,11 @@
 #include <vector>
 #include "Types.h"
 #include "Function.h"
+#include "Matrix.h"
 #include "Polynomial.h"
 
 namespace MathParser
 {
-	class Function;
-	class Polynomial;
-	class Matrix;
 	class Vector;
 
 	class MathParser
@@ -22,15 +20,20 @@ namespace MathParser
 		int precision;
 
 		MathParser();
-		std::string parse(std::string);
-		std::string printSavedFunctions();
-		std::string printSavedPolynomials();
+
 		void clear();
+		void loadFile(std::string str);
+		std::string parse(std::string str);
+		std::string printSavedFunctions();
+		std::string printSavedMatrices();
+		std::string printSavedPolynomials();
+		void saveFile(std::string str);
 
 	protected:
 		real LAST;
 		std::vector<char> variables;
 		std::vector<Function> savedFunctions;
+		std::vector<Matrix> savedMatrices;
 		std::vector<Polynomial> savedPolynomials;
 
 	private:
@@ -45,6 +48,11 @@ namespace MathParser
 
 		// Helper subfunctions for handling refernces to saved memory.
 		std::string parseFunctionReference(std::string str, int idx);
+		std::string parseMatrixReference(std::string str, int idx);
 		std::string parsePolynomialReference(std::string str, int idx);
+
+		// Parse matrices from the command line in the format '[1,0,0;0,1,0;0,0,1],'
+		// which would be a 3x3 identity matrix.
+		Matrix ParseMatrix(std::string input);
 	};
 }

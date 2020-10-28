@@ -18,6 +18,16 @@ namespace MathParser
 			std::cout << "================" << std::endl;
 		}
 
+		// Print matrices saved in memory.
+		matricesString = parser.printSavedMatrices();
+		if (matricesString.length())
+		{
+			std::cout << std::endl;
+			std::cout << "Saved Matrices:" << std::endl;
+			std::cout << matricesString;
+			std::cout << "================" << std::endl;
+		}
+
 		// Print polynomials saved in memory.
 		polynomialString = parser.printSavedPolynomials();
 		if (polynomialString.length())
@@ -38,6 +48,14 @@ namespace MathParser
 			parser.clear();
 		else if (!strcmp(inputText, "help"))
 			printHelp();
+		else if (std::string(inputText).find("load(") != std::string::npos)
+		{
+			parser.loadFile(inputText);
+		}	
+		else if (std::string(inputText).find("save(") != std::string::npos)
+		{
+			parser.saveFile(inputText);
+		}
 		else if (!strcmp(inputText, "test"))
 		{
 			UnitTests tests;
@@ -64,7 +82,9 @@ namespace MathParser
 		std::cout << "List of system commands:" << std::endl;
 		std::cout << "clear" << std::endl;
 		std::cout << "exit" << std::endl;
+		std::cout << "load(filename)" << std::endl;
 		std::cout << "help" << std::endl;
+		std::cout << "save(filename)" << std::endl;
 		std::cout << "test" << std::endl;
 		std::cout << std::endl;
 
@@ -77,6 +97,7 @@ namespace MathParser
 		std::cout << "For example, a user could type 'LAST + 2'" << std::endl;
 		std::cout << "To change precision, type 'precision = n'" << std::endl;
 		std::cout << "To declare a function, type 'f(x,y,..) = [equation terms]'" << std::endl;
+		std::cout << "To declare a matrix, type rows ending in semicolons, surrounded by brackets ie '[1,0,0;0,1,0;0,0,1]'" << std::endl;
 		std::cout << "To declare a polynomial, type 'p(x) = [polynomial terms like 'x^2 + x']'" << std::endl;
 		std::cout << "To reference a saved mathematical object (like a function), use the first letter of the"
 			"object's name, followed by the index number. For example, to evaluate function 1 at x = 2.3, type"
@@ -104,7 +125,7 @@ namespace MathParser
 		while (!windowClose)
 		{
 			printSavedMemory();
-			std::cout << "Enter equation: ";
+			std::cout << "Enter a command: ";
 			std::cin.getline(inputText, 256);			
 			interpretInput();
 		}

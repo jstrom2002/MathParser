@@ -15,6 +15,7 @@ namespace MathParser
 		bool calculateArithmeticTest();
 		bool countOperatorsTest();
 		bool countComplexNumbersTest();
+		bool fileIOTest();
 		bool findNearestRealTest();
 		bool getNearestRealTest();
 		bool imageProcessingTest();

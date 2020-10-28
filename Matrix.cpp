@@ -5,8 +5,11 @@
 #include "ComplexNumber.h"
 #include "MathLib.h"
 #include "StringUtils.h"
+#include "Parsing.h"
 #include <ctime>
 #include <iomanip>
+#include <fstream>
+#include <WinSock2.h>
 
 namespace std
 {
@@ -150,6 +153,20 @@ namespace MathParser
 		return x;
 	}
 
+	real Matrix::minValue()
+	{
+		real x = std::numeric_limits<real>::max();
+		for (int i = 0; i < rows; ++i)
+		{
+			for (int j = 0; j < columns; ++j)
+			{
+				if (element[i * columns + j] < x)
+					x = element[i * columns + j];
+			}
+		}
+		return x;
+	}
+
 	void Matrix::identity() 
 	{
 		for (int i = 0; i < rows; ++i) {
@@ -164,17 +181,16 @@ namespace MathParser
 
 	Matrix Matrix::submatrix(int i, int j, int i2, int j2) 
 	{
-		int size1 = (((i2 + 1) * (j2 + 1)) - ((i + 1) * (j + 1)));
+		int size1 = (std::abs(i2-i)+1) * (std::abs(j2-j)+1);
 		Vector vals;
 		vals.resize(size1,0);
 		int counter = 0;
-		for (int a = i; a <= i2; ++a) {
+		for (int a = i; a <= i2; ++a) 
 			for (int b = j; b <= j2; ++b) {
 				vals[counter] = element[a * columns + b];
 				++counter;
-			}
-		}
-		return Matrix(i2 - i + 1, j2 - j + 1, vals);
+			}		
+		return Matrix(std::abs(i2 - i)+1, std::abs(j2 - j)+1, vals);
 	}
 
 	Vector Matrix::diagonal() 
@@ -303,7 +319,7 @@ namespace MathParser
 		return Matrix(rows, columns, Aug.element);
 	}
 
-	Matrix Matrix::HadamardProduct(Matrix A, Matrix B) 
+	Matrix HadamardProduct(Matrix A, Matrix B) 
 	{// Multiplies elements of two matrices by index so that C(i,j) = A(i,j)*B(i,j)
 		if (A.rows != B.rows || A.columns != B.columns) 
 			return Matrix();
@@ -316,6 +332,215 @@ namespace MathParser
 			}
 		}
 		return Matrix(A.rows, A.columns, elm);
+	}
+
+	void Matrix::reshape(int r, int c)
+	{
+		// Catch case where new dimensions are invalid.
+		if (r * c != rows * columns)
+			return;
+
+		else
+		{
+			rows = r;
+			columns = c;
+		}
+	}
+
+	void Matrix::saveBMP(std::string filename, int colorDepth)
+	{//Ref: https://en.wikipedia.org/wiki/BMP_file_format#Example_1
+		FILE* f = fopen(filename.c_str(), "wb");
+
+		int rowSize = std::floor(((colorDepth * columns) + 31.0) / 32.0) * 4;
+		
+		// Write first 14 byte BMP ID header.
+		uint16_t bmpID = htons(0x424D);//('B' + 'M');
+		uint32_t fileBytes = htonl(rows*columns*4 + 14 + 40);
+		uint16_t dummy = (0);
+		uint32_t offsetToData = htonl(14+40);
+		fwrite(&bmpID, sizeof(uint16_t), 1, f);
+		fwrite(&fileBytes, sizeof(uint32_t), 1, f);
+		fwrite(&dummy, sizeof(uint16_t), 1, f);
+		fwrite(&dummy, sizeof(uint16_t), 1, f);
+		fwrite(&offsetToData, sizeof(uint32_t), 1, f);
+
+		// Write 40 byte DIB header.
+		uint32_t bytesInHeader2 = htonl(40);
+		int32_t bmpWidth2 = htonl(columns);
+		int32_t bmpHeight2 = htonl(rows);
+		uint16_t colorPlanes = htons(1);
+		uint16_t bitsPerPixel = htons(32);
+		uint32_t compressionMethod = htonl(0);
+		uint32_t bmpSize = htonl(rows*columns*4);
+		uint32_t pixelPerMeterX = htonl(2835);
+		uint32_t pixelPerMeterY = htonl(2835);
+		uint32_t colorMapUsed = (0);
+		uint32_t significantColors = (0);
+		fwrite(&bytesInHeader2, sizeof(uint32_t), 1, f);
+		fwrite(&bmpWidth2, sizeof(int32_t), 1, f);
+		fwrite(&bmpHeight2, sizeof(int32_t), 1, f);
+		fwrite(&colorPlanes, sizeof(uint16_t), 1, f);
+		fwrite(&bitsPerPixel, sizeof(uint16_t), 1, f);
+		fwrite(&compressionMethod, sizeof(uint32_t), 1, f);
+		fwrite(&bmpSize, sizeof(uint32_t), 1, f);
+		fwrite(&pixelPerMeterX, sizeof(uint32_t), 1, f);
+		fwrite(&pixelPerMeterY, sizeof(uint32_t), 1, f);
+		fwrite(&colorMapUsed, sizeof(uint32_t), 1, f);
+		fwrite(&significantColors, sizeof(uint32_t), 1, f);
+
+		//write pixel data.
+		unsigned char val255 = 255;
+		int counter = 0;
+		for (int i = 0; i < element.size(); i++) 
+		{
+			{	// Convert back from Gray to RGB and write pixels to file.
+				unsigned char R = (element[i] * 0.299) * 255;
+				unsigned char G = (element[i] * 0.587) * 255;
+				unsigned char B = (element[i] * 0.114) * 255;
+				fwrite(&val255, sizeof(unsigned char), 1, f);
+				fwrite(&R, sizeof(unsigned char), 1, f);
+				fwrite(&G, sizeof(unsigned char), 1, f);
+				fwrite(&B, sizeof(unsigned char), 1, f);
+				counter += 4;
+			}
+		}		
+		fclose(f);
+	}
+
+	void Matrix::saveCSV(std::string filename)
+	{
+		FILE* file1 = fopen(filename.c_str(), "w");
+		while (file1)
+		{
+			for (int i = 0; i < rows; ++i)
+				for (int j = 0; j < columns; ++j)
+				{
+					if(j<columns-1)
+						printf("%d,", element[i * columns + j]);
+					else if(i<rows-1)
+						printf("%d\n", element[i * columns + j]);
+					else
+						printf("%d", element[i * columns + j]);
+				}
+			fclose(file1);
+		}
+	}
+
+	void Matrix::loadBMP(std::string filename)
+	{
+		this->clear();
+
+		std::vector<unsigned char> header;
+		int numberOfBytes = 0;
+		int reservedBytes = 0;
+		int headerSize = 0;
+		int wdt = 0;
+		int hgt = 0;
+		int colorDepth = 0;
+		int padBytes = 0;
+		int rowSize = 0;
+
+		//open BMP file
+		FILE* f = fopen(filename.c_str(), "rb");
+
+		//read preliminary file data -- 14 bytes
+		unsigned char prelimData[14];
+		fread(prelimData, sizeof(unsigned char), 14, f);
+		for (int i = 0; i < 14; ++i) { header.push_back(prelimData[i]); }
+		numberOfBytes = (header[5] << 24) ^ (header[4] << 16) ^ (header[3] << 8) ^ header[2];//read number of bytes in file
+		reservedBytes = (header[9] << 24) ^ (header[8] << 16) ^ (header[7] << 8) ^ header[6];//read reserved data
+		headerSize = (header[13] << 24) ^ (header[12] << 16) ^ (header[11] << 8) ^ header[10];//read starting address
+
+		//read and interpret file header data
+		unsigned char* headerData = new unsigned char[headerSize - 14];
+		fread(headerData, sizeof(unsigned char), headerSize - 14, f);//read the 54-byte header
+		for (int i = 0; i < headerSize - 14; ++i) { header.push_back(headerData[i]); }
+
+		//initialize class variables;
+		wdt = (header[21] << 24) ^ (header[20] << 16) ^ (header[19] << 8) ^ header[18];//gives image height 
+		hgt = (header[25] << 24) ^ (header[24] << 16) ^ (header[23] << 8) ^ header[22];//gives image width
+		colorDepth = (header[27] << 8) ^ header[28]; //read color depth to determine color array
+		rowSize = std::floor(((colorDepth * wdt) + 31.0) / 32.0) * 4;
+
+		// Now that the header has been read, load all subsequent bytes.
+		std::vector<unsigned char> data;
+		unsigned char data2;
+		while (fread(&data2, sizeof(unsigned char), 1, f))
+			data.push_back(data2);		
+		fclose(f);
+
+		if (colorDepth == 8)// If already grayscale, just copy array of data to element array.
+		{
+			for (int i = 0; i < data.size(); ++i)
+				element.push_back(data[i]);
+		}
+		else// Else, convert to grayscale.
+		{
+			int pixelCount = 0;//counts the number of pixel vectors read
+			std::vector<unsigned char> tempVec;
+			if (colorDepth == 24) {
+				for (int i = 0; i < data.size(); ++i) {
+					if (i % rowSize < rowSize - padBytes) {
+						if (i > 0 && i % 3 == 0) {
+							real R = tempVec[0] / 255.0;
+							real G = tempVec[1] / 255.0;
+							real B = tempVec[2] / 255.0;
+							real Y = (R * 0.299 + G * 0.587 + B * 0.114);//calculate luminance from formula
+							element.push_back(Y * 255.0);
+							tempVec.clear();
+						}
+						tempVec.push_back(data[i]);
+					}
+				}
+			}
+		}
+
+		rows = hgt;
+		columns = wdt;
+	}
+
+	void Matrix::loadCSV(std::string filename)
+	{
+		this->clear();
+
+		std::ifstream file1 (filename, std::ios::in);
+		std::string buff = "";
+		int r = 0;
+		int c = 0;
+		while (std::getline(file1, buff))
+		{			
+			while (buff[0] < '0' || buff[0] > 'z')
+				buff = buff.substr(1);
+			while (buff[buff.length() - 1] < '0' || buff[buff.length() - 1] > 'z')
+				buff = buff.substr(0, buff.length() - 1);
+			std::vector<real> temp = ParseNInputNumbers(buff);
+			if (temp.size() > c)
+				c = temp.size();
+			element.insert(std::end(element), std::begin(temp), std::end(temp));
+			r++;
+		}
+		rows = r;
+		columns = c;
+	}
+
+	Matrix convolve(Matrix kernel, Matrix img)
+	{
+		// Handle case where kernel has an even dimension.
+		if (!(kernel.rows % 2) || !(kernel.columns % 2))
+			return Matrix();
+
+		int dx = std::floor(kernel.columns/2);
+		int dy = std::floor(kernel.rows/2);
+		std::vector<real> vals(img.size(), 0);
+		for(int i = dy; i < img.rows - dy; ++i)
+			for (int j = dx; j < img.columns - dx; ++j)
+			{// Each region is convolved by taking the Hadamard product of it with the kernel
+			 // and summing the results.
+				Matrix submat = img.submatrix(i - dy, j - dx, i + dy, j + dx);
+				Matrix had = HadamardProduct(submat, kernel);
+				vals[i * img.columns + j] = had.sum();
+			}
+		return Matrix(img.rows, img.columns, vals);
 	}
 
 	Vector Matrix::row(int rw) 
@@ -989,16 +1214,6 @@ namespace MathParser
 		return answer;
 	}
 
-	real Matrix::sumAll() {
-		real answer = 0;
-		for (int i = 0; i < rows; ++i) {
-			for (int j = 0; j < columns; j++) {
-				answer += element[i * columns + j];
-			}
-		}
-		return answer;
-	}
-
 	real Matrix::columnMean(int c) {
 		real answer = 0;
 		for (int i = 0; i < rows; ++i) {
@@ -1180,7 +1395,7 @@ namespace MathParser
 		real answer = 0;
 		real df = (rows - 1) * (columns - 1);
 
-		real sm = sumAll();
+		real sm = sum();
 		for (int i = 0; i < rows; ++i) {
 			for (int j = 0; j < columns; ++j) {
 				real Ei = (sumRow(i) * sumColumn(j) / sm);
@@ -1190,7 +1405,10 @@ namespace MathParser
 		return answer;
 	}
 
-	real Matrix::ChiSquareDegreesFreedom() { return  (rows - 1) * (columns - 1); }
+	real Matrix::ChiSquareDegreesFreedom() 
+	{ 
+		return  (rows - 1) * (columns - 1); 
+	}
 
 	void Matrix::removeRow(int n) {
 		Vector newElements;

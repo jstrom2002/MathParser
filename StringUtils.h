@@ -17,6 +17,9 @@ namespace MathParser
 
 	std::string eraseParenPair(std::string str, size_t pos);
 	size_t findMatchingParen(std::string str, int pos);
+	std::string getDirectory(std::string str);
+	std::string getExtension(std::string str);
+	std::string getFilename(std::string str);
 	std::string getMantissa(std::string n);
 	std::string getInteger(std::string n);
 	std::string getNextInnerMostExpression(std::string str);
