@@ -613,7 +613,7 @@ namespace MathParser
 		emptyMat = emptyMat.transpose();
 		A2 *= emptyMat;
 		Matrix A3(A2.rows, A2.columns);
-		if (A2 != A3 || A2.maxValue() != 0)
+		if (A2 != A3 || A2.max() != 0)
 		{
 			std::cout << "test result: " << A1.to_string() << std::endl;
 			std::cout << "expected result: " << emptyMat.to_string() << std::endl;
@@ -642,8 +642,7 @@ namespace MathParser
 			4, 5, 6,
 			7, 8, 9,
 		};
-		Matrix M1;
-		M1.loadCSV("test.csv");
+		Matrix M1 = csvread("test.csv");
 		Matrix M2(3, 3, p1);
 
 		if (M1 != M2)
@@ -691,11 +690,11 @@ namespace MathParser
 
 		// Test: Gauss-Jordan Elimination (can be extremely slow or not converge at all)
 		Matrix GJE = A.GaussianElimination();
-		Matrix eye = identityMatrix(GJE.rows, GJE.columns);
-		if (GJE != eye)
+		Matrix iden = eye(GJE.rows, GJE.columns);
+		if (GJE != iden)
 		{
 			std::cout << "test result: " << GJE.to_string() << std::endl;
-			std::cout << "expected result: " << eye.to_string()
+			std::cout << "expected result: " << iden.to_string()
 				<< std::endl;
 			return false;
 		}
@@ -706,12 +705,11 @@ namespace MathParser
 	bool UnitTests::imageProcessingTest()
 	{
 		// Test 1: load .bmp file, then apply Gaussian blur filter and save results to file.
-		Matrix bwImg;
-		bwImg.loadBMP("cat.bmp");
+		Matrix bwImg = imread("cat.bmp");
 		Matrix kernel = GaussianKernel2D(5, 1);
 		Matrix Mat2 = convolve(kernel, bwImg);
 		Mat2.transpose();
-		Mat2.saveBMP("test1.bmp");
+		imwrite("test1.bmp", Mat2, 24);
 		//BMPtoText("test1.bmp");//also do hex dump of file.
 
 		// Test 2:

@@ -28,18 +28,10 @@ namespace MathParser
 
 		// Handle file loading according to file extension.
 		std::string ext = getExtension(str);
-		if (str.find(".csv"))
-		{
-			Matrix M;
-			M.loadCSV(str);
-			savedMatrices.push_back(M);
-		}
-		if (str.find(".bmp"))
-		{
-			Matrix M;
-			M.loadBMP(str);
-			savedMatrices.push_back(M);
-		}
+		if (str.find(".csv"))		
+			savedMatrices.push_back(csvread(str));		
+		if (str.find(".bmp"))		
+			savedMatrices.push_back(imread(str));		
 	}
 
 	void MathParser::saveFile(std::string str)

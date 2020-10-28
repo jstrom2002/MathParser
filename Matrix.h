@@ -27,17 +27,16 @@ namespace MathParser
 		Matrix();
 		Matrix(int n);
 		Matrix(int row, int col);
-		Matrix(int row, int col, Vector element2);
-		Matrix(Vector element2);
-		Matrix(std::vector<Vector> elm);
-		Matrix(int row, int col, std::vector<real> element2);	
+		Matrix(int row, int col, Vector elements);
+		Matrix(Vector elements);
+		Matrix(std::vector<Vector> elements);
+		Matrix(int row, int col, std::vector<real> elements);	
 
 		// Overloaded operators:
 		bool operator==(Matrix& rhs);
 		bool operator!=(Matrix& rhs);
 		real& operator()(int r, int c);
 		real operator()(int r, int c) const;
-
 		Matrix operator*=(Matrix& rhs);
 		Matrix operator*=(real x);
 		Matrix operator+=(Matrix& rhs);
@@ -69,8 +68,6 @@ namespace MathParser
 		void addToColumn(int cl, real n);
 		void addToColumn(int cl, Vector n);
 		real adjustedRsquared();
-		Matrix autoCorrelation(Matrix A);
-		bool canSwapOutZeroDiagonals();
 		Matrix characteristicMatrix();
 		Polynomial characteristicPolynomial();
 		real ChiSquareDegreesFreedom();
@@ -89,11 +86,7 @@ namespace MathParser
 		real columnNorm(int c);
 		real columnSumSquares(int c);
 		real columnVariance(int c);
-		Matrix concatenate(Matrix A, Matrix B);
-		Matrix convolve(Matrix A, Matrix B);
-		Matrix crossCorrelation(Matrix A, Matrix B);
 		real det();
-		real detExact();
 		Vector diagonal();
 		Matrix directSum(Matrix A, Matrix B);
 		Matrix dominantEigenvector(int iterations = 500);
@@ -122,7 +115,6 @@ namespace MathParser
 		Matrix GramMatrix(Matrix M);
 		Matrix GramSchmidt();
 		std::vector<Matrix> HouseholderQR();
-		void identity();
 		Matrix inverse();
 		Matrix inverseExact();
 		Matrix inverseByQR();
@@ -135,24 +127,16 @@ namespace MathParser
 		bool isPositiveDefinite();
 		bool isPositiveSemidefinite();
 		bool isSymmetric();
-		std::vector<int> JacobiIndexing();
-		Matrix JacobiRotationMatrix(int p, int q, real c, real s);
-		std::vector<Matrix> JacobiTransformation(highpUint limit = 10000);
-		Matrix L();
 		std::vector<Matrix> LDL();
-		int largestElement();
 		Matrix leastSquares(Matrix X, Matrix Y);
 		Function leastSquares();
 		Matrix leastSquaresMatrix();
-		void loadBMP(std::string filename);
-		void loadCSV(std::string filename);
 		Matrix lowerTriangularize();
 		Matrix lowerHessenbergForm();
-		std::vector<Matrix> LU();
-		real maxValue();
+		real max();
 		real mean();
 		Vector meanVector();
-		real minValue();
+		real min();
 		void multiplyRow(int rw, real n);
 		void multiplyRow(int rw, Vector n);
 		real norm();
@@ -166,11 +150,8 @@ namespace MathParser
 		real pNorm(real p);
 		Matrix populationCovarianceMatrix();
 		real populationStandardDeviation();
-		void power(real n);
 		Matrix pseudoinverse();
-		Matrix Q();
 		std::vector<Matrix> QR();
-		Matrix R();
 		void randomize();
 		void randomizeInteger();
 		void randomizeBoolean();
@@ -200,10 +181,6 @@ namespace MathParser
 		real Rsquared();
 		Matrix sampleCovarianceMatrix();
 		real sampleStandardDeviation();
-		void saveBMP(std::string filename, int colorDepth=8);
-		void saveCSV(std::string filename);
-		void setColumnNonZeroValues(int col, real x);
-		void setRowNonZeroValues(int rw, real x);
 		void setRow(int rw, Vector n);
 		void setColumn(int col, Vector n);
 		int size();
@@ -215,7 +192,6 @@ namespace MathParser
 		real sumSquares();
 		void swapRows(int r1, int r2);
 		void swapColumns(int c1, int c2);
-		Matrix swapOutZeroDiagonals();
 		std::vector<Matrix> SVD();
 		Matrix tensorProduct(Matrix A, Matrix B);
 		std::vector<Matrix> thinQR();
@@ -229,7 +205,6 @@ namespace MathParser
 		Matrix upperHessenbergForm();
 		Matrix Vandermonde();
 		Matrix varianceMatrix();
-		bool zeroInDiag();
 
 		private:
 			// Helper functions to reduce reusing code for operator overloads.
@@ -244,17 +219,24 @@ namespace MathParser
 			Matrix multiply(real b, Matrix& a);
 			Matrix divide(Matrix& p, Matrix& q);
 			Matrix divide(Matrix& p2, real q);
-			Matrix divide(real q, Matrix& p2);
-			
-			// Helper functions for class methods:
-			std::vector<int> pivotColumns();
+			Matrix divide(real q, Matrix& p2);		
 	};
 
-	Matrix convolve(Matrix kernel, Matrix img);
+	// Non-class member functions for matrices:
+	Matrix hconcat(Matrix A, Matrix B);
+	Matrix vconcat(Matrix A, Matrix B);
+	Matrix convolve(Matrix& kernel, Matrix& B);
+	Matrix crossCorrelation(Matrix A, Matrix B);
+	Matrix csvread(std::string filename);
+	void csvwrite(std::string filename, Matrix& M);
 	Matrix directionMatrix(Vector v);
-	Matrix identityMatrix(int n);
-	Matrix identityMatrix(int n, int m);
 	Matrix HadamardProduct(Matrix A, Matrix B);
+	Matrix eye(int n);
+	Matrix eye(int n, int m);
+	Matrix imread(std::string filename);
+	void imwrite(std::string filename, Matrix& M, int colorDepth=8);
+	std::vector<Matrix> JacobiTransformation(Matrix& M, highpUint limit = 10000);
+	std::vector<Matrix> LU(Matrix& M);
 	Matrix outerProduct(Matrix& A, Matrix& B);
 	Matrix positionMatrix(Vector v);
 	Matrix rotationMatrix(Vector v);
@@ -266,5 +248,5 @@ namespace MathParser
 
 namespace std
 {
-	MathParser::Matrix pow(MathParser::Matrix m, int x);
+	MathParser::Matrix pow(MathParser::Matrix& m, int x);
 }

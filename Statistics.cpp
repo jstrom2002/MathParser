@@ -228,8 +228,7 @@ namespace MathParser
 	Matrix correlationMatrix(Matrix A) {
 		//this correlation matrix is the symmetric matrix of values 
 		//for Pearson correlations between variable i and variable j
-		Matrix M(A.columns, A.columns);
-		M.identity();
+		Matrix M = eye(A.columns, A.columns);
 		for (int i = 1; i < M.columns; ++i) {
 			for (int j = 0; j < i; ++j) {
 				if (i != j) {

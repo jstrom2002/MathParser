@@ -13,27 +13,20 @@
 
 namespace std
 {
-	MathParser::Matrix pow(MathParser::Matrix A, int b)
+	MathParser::Matrix pow(MathParser::Matrix& A, int b)
 	{
-		if (b != floor(b))
-			return MathParser::Matrix();
-
-		if (b < 0) {
-			A = A.inverse();
-			b = abs(b);
-		}
 		if (b == 0)
-		{
-			MathParser::Matrix A2(A.rows, A.columns);
-			A2.identity();
-			return A2;
-		}
+			return MathParser::eye(A.rows, A.columns);
 
 		MathParser::Matrix A2 = A;
-		for (int i = 1; i < b; ++i)
+		if (b < 0)
 		{
-			A2 *= A;
+			A2 = A.inverse();
+			b = abs(b);
 		}
+
+		for (int i = 1; i < b; ++i)		
+			A2 *= A;		
 
 		return A2;
 	}
@@ -59,7 +52,7 @@ namespace MathParser
 		columns = col;
 	}
 
-	Matrix::Matrix(int row, int col, Vector element2) 
+	Matrix::Matrix(int row, int col, Vector elements) 
 	{
 		int n = row;
 		int m = col;
@@ -69,8 +62,7 @@ namespace MathParser
 		element.resize(row * col, 0);
 		for (int i = 0; i < row; ++i) {
 			for (int j = 0; j < col; ++j) {
-				real n2 = element2[i * col + j];
-				element[i * col + j] = n2;
+				this->element[i * col + j] = elements[i * col + j];
 			}
 		}
 		rows = row; 
@@ -85,7 +77,7 @@ namespace MathParser
 			element[i * v.size() + i] = v[i];
 	}
 
-	Matrix::Matrix(int row, int col, std::vector<real> element2) 
+	Matrix::Matrix(int row, int col, std::vector<real> elements) 
 	{
 		int n = row;
 		int m = col;
@@ -95,27 +87,65 @@ namespace MathParser
 		element.resize(row * col, 0);
 		for (int i = 0; i < row; ++i) {
 			for (int j = 0; j < col; ++j) {
-				real n2 = element2[i * col + j];
-				element[i * col + j] = n2;
+				element[i * col + j] = elements[i * col + j];				
 			}
 		}
 		rows = row; 
 		columns = col;
 	}
 
-	Matrix::Matrix(std::vector<Vector> elm) 
+	Matrix::Matrix(std::vector<Vector> elements) 
 	{
-		int n = elm.size();
-		int m = elm[0].size();
+		rows = elements.size();
+		columns = elements[0].size();
 		element.clear();
-		element.resize(elm.size() * elm[0].size(), 0);
-		for (int i = 0; i < n; ++i) {
-			for (int j = 0; j < m; ++j) {
-				real n2 = elm[i][j];
-				element[i * m + j] = n2;
+		element.resize(rows*columns, 0);
+		for (int i = 0; i < rows; ++i) {
+			for (int j = 0; j < columns; ++j) {
+				element[i * columns + j] = elements[i][j];
 			}
 		}
-		rows = n; columns = m;
+	}
+
+	bool zeroInDiag(Matrix& M)
+	{	//Test if there are any 0's in the diagonal of a matrix.
+		for (int i = 0; i < M.rows; ++i)
+			if (!M(i, i))
+				return true;
+		return false;
+	}
+
+	std::vector<int> pivotColumns(Matrix& M) 
+	{	// Helper function.
+		std::vector<int> piv;
+		for (int i = 0; i < M.rows; ++i) {
+			for (int j = 0; j < M.columns; ++j) {
+				real val = M(i, j);
+				if (val != 0) {
+					piv.push_back(j);
+					j = M.columns + 1;
+				}
+			}
+		}
+		return piv;
+	}
+
+	void setRowNonZeroValues(Matrix& M, int rw, real x)
+	{	// Helper function.
+		for (int k = 0; k < M.columns; ++k) {
+			if (std::abs(M(rw, k)) > 0) {
+				M(rw, k) = x;
+			}
+		}
+	}
+
+	void setColumnNonZeroValues(Matrix& M, int col, real x)
+	{	// Helper function.
+		for (int k = 0; k < M.rows; ++k)
+		{
+			if (std::abs(M(k, col)) > 0)
+				M(k, col) = x;
+		}
 	}
 
 	real& Matrix::operator()(int r, int c) 
@@ -139,7 +169,7 @@ namespace MathParser
 		return rows * columns; 
 	}
 
-	real Matrix::maxValue() 
+	real Matrix::max() 
 	{
 		real x = -std::numeric_limits<real>::max();
 		for (int i = 0; i < rows; ++i) 
@@ -153,7 +183,7 @@ namespace MathParser
 		return x;
 	}
 
-	real Matrix::minValue()
+	real Matrix::min()
 	{
 		real x = std::numeric_limits<real>::max();
 		for (int i = 0; i < rows; ++i)
@@ -165,18 +195,6 @@ namespace MathParser
 			}
 		}
 		return x;
-	}
-
-	void Matrix::identity() 
-	{
-		for (int i = 0; i < rows; ++i) {
-			for (int j = 0; j < columns; ++j) {
-				if (i == j) 
-					element[i * columns + j] = 1;
-				else 
-					element[i * columns + j] = 0;
-			}
-		}
 	}
 
 	Matrix Matrix::submatrix(int i, int j, int i2, int j2) 
@@ -207,18 +225,18 @@ namespace MathParser
 		if (rows != columns)
 			return Matrix();
 		Matrix m(rows, columns, element);
-		m = m.concatenate(m, identityMatrix(rows, columns));
+		m = hconcat(m, eye(rows, columns));
 		m = m.GaussianElimination();
-		while (m.columns > columns) { m.removeColumn(0); }
+		while (m.columns > columns)
+			m.removeColumn(0);
 		return m;
 	}
-
 
 	Matrix Matrix::inverse() {
 		/*INPUT: n×m matrix A.
 		OUTPUT: n×m matrix in reduced row echelon form.
-		1.Set j←1
-		2.For each row i from 1 to n do
+		1. Set j <-- 1
+		2. For each row i from 1 to n do
 		a. While column j h as all zero elements, set j <- j+1. If j>m return A.
 		b. If element a_ij is zero, then interchange row i with a row x > i that has a_xj!=0.
 		c. Divide each element of row i by a_ij, thus making the pivot aij equal to one.
@@ -228,10 +246,9 @@ namespace MathParser
 		if (det() == 0) 
 			return Matrix();
 		Matrix A(rows, columns, element);
-		Matrix Aug(rows, columns);
-		Aug.identity();
+		Matrix Aug = eye(rows, columns);
 
-		while (A.zeroInDiag() == true) {
+		while (zeroInDiag(A)) {
 			for (int i = 0; i < rows; ++i) {
 				if (A(i, i) == 0) {
 					for (int j = 0; j < columns; ++j) {
@@ -347,15 +364,15 @@ namespace MathParser
 		}
 	}
 
-	void Matrix::saveBMP(std::string filename, int colorDepth)
+	void imwrite(std::string filename, Matrix& M, int colorDepth)
 	{//Ref: https://en.wikipedia.org/wiki/BMP_file_format#Example_1
 		FILE* f = fopen(filename.c_str(), "wb");
 
-		int rowSize = std::floor(((colorDepth * columns) + 31.0) / 32.0) * 4;
+		int rowSize = std::floor(((colorDepth * M.columns) + 31.0) / 32.0) * 4;
 		
 		// Write first 14 byte BMP ID header.
 		uint16_t bmpID = htons(0x424D);//('B' + 'M');
-		uint32_t fileBytes = htonl(rows*columns*4 + 14 + 40);
+		uint32_t fileBytes = htonl(M.rows*M.columns*4 + 14 + 40);
 		uint16_t dummy = (0);
 		uint32_t offsetToData = htonl(14+40);
 		fwrite(&bmpID, sizeof(uint16_t), 1, f);
@@ -366,12 +383,12 @@ namespace MathParser
 
 		// Write 40 byte DIB header.
 		uint32_t bytesInHeader2 = htonl(40);
-		int32_t bmpWidth2 = htonl(columns);
-		int32_t bmpHeight2 = htonl(rows);
+		int32_t bmpWidth2 = htonl(M.columns);
+		int32_t bmpHeight2 = htonl(M.rows);
 		uint16_t colorPlanes = htons(1);
 		uint16_t bitsPerPixel = htons(32);
 		uint32_t compressionMethod = htonl(0);
-		uint32_t bmpSize = htonl(rows*columns*4);
+		uint32_t bmpSize = htonl(M.rows*M.columns*4);
 		uint32_t pixelPerMeterX = htonl(2835);
 		uint32_t pixelPerMeterY = htonl(2835);
 		uint32_t colorMapUsed = (0);
@@ -391,12 +408,12 @@ namespace MathParser
 		//write pixel data.
 		unsigned char val255 = 255;
 		int counter = 0;
-		for (int i = 0; i < element.size(); i++) 
+		for (int i = 0; i < M.size(); i++) 
 		{
 			{	// Convert back from Gray to RGB and write pixels to file.
-				unsigned char R = (element[i] * 0.299) * 255;
-				unsigned char G = (element[i] * 0.587) * 255;
-				unsigned char B = (element[i] * 0.114) * 255;
+				unsigned char R = (M.element[i] * 0.299) * 255;
+				unsigned char G = (M.element[i] * 0.587) * 255;
+				unsigned char B = (M.element[i] * 0.114) * 255;
 				fwrite(&val255, sizeof(unsigned char), 1, f);
 				fwrite(&R, sizeof(unsigned char), 1, f);
 				fwrite(&G, sizeof(unsigned char), 1, f);
@@ -407,102 +424,106 @@ namespace MathParser
 		fclose(f);
 	}
 
-	void Matrix::saveCSV(std::string filename)
+	void csvwrite(std::string filename, Matrix& M)
 	{
 		FILE* file1 = fopen(filename.c_str(), "w");
 		while (file1)
 		{
-			for (int i = 0; i < rows; ++i)
-				for (int j = 0; j < columns; ++j)
+			for (int i = 0; i < M.rows; ++i)
+			{
+				for (int j = 0; j < M.columns; ++j)
 				{
-					if(j<columns-1)
-						printf("%d,", element[i * columns + j]);
-					else if(i<rows-1)
-						printf("%d\n", element[i * columns + j]);
+					if (j < M.columns - 1)
+						printf("%d,", M.element[i * M.columns + j]);
+					else if (i < M.rows - 1)
+						printf("%d\n", M.element[i * M.columns + j]);
 					else
-						printf("%d", element[i * columns + j]);
+						printf("%d", M.element[i * M.columns + j]);
 				}
+			}
 			fclose(file1);
 		}
 	}
 
-	void Matrix::loadBMP(std::string filename)
+	Matrix imread(std::string filename)
 	{
-		this->clear();
-
-		std::vector<unsigned char> header;
-		int numberOfBytes = 0;
-		int reservedBytes = 0;
-		int headerSize = 0;
+		std::vector<real> element;
 		int wdt = 0;
 		int hgt = 0;
-		int colorDepth = 0;
-		int padBytes = 0;
-		int rowSize = 0;
-
-		//open BMP file
-		FILE* f = fopen(filename.c_str(), "rb");
-
-		//read preliminary file data -- 14 bytes
-		unsigned char prelimData[14];
-		fread(prelimData, sizeof(unsigned char), 14, f);
-		for (int i = 0; i < 14; ++i) { header.push_back(prelimData[i]); }
-		numberOfBytes = (header[5] << 24) ^ (header[4] << 16) ^ (header[3] << 8) ^ header[2];//read number of bytes in file
-		reservedBytes = (header[9] << 24) ^ (header[8] << 16) ^ (header[7] << 8) ^ header[6];//read reserved data
-		headerSize = (header[13] << 24) ^ (header[12] << 16) ^ (header[11] << 8) ^ header[10];//read starting address
-
-		//read and interpret file header data
-		unsigned char* headerData = new unsigned char[headerSize - 14];
-		fread(headerData, sizeof(unsigned char), headerSize - 14, f);//read the 54-byte header
-		for (int i = 0; i < headerSize - 14; ++i) { header.push_back(headerData[i]); }
-
-		//initialize class variables;
-		wdt = (header[21] << 24) ^ (header[20] << 16) ^ (header[19] << 8) ^ header[18];//gives image height 
-		hgt = (header[25] << 24) ^ (header[24] << 16) ^ (header[23] << 8) ^ header[22];//gives image width
-		colorDepth = (header[27] << 8) ^ header[28]; //read color depth to determine color array
-		rowSize = std::floor(((colorDepth * wdt) + 31.0) / 32.0) * 4;
-
-		// Now that the header has been read, load all subsequent bytes.
-		std::vector<unsigned char> data;
-		unsigned char data2;
-		while (fread(&data2, sizeof(unsigned char), 1, f))
-			data.push_back(data2);		
-		fclose(f);
-
-		if (colorDepth == 8)// If already grayscale, just copy array of data to element array.
+		std::string ext = getExtension(filename);
+		if (ext == ".bmp")
 		{
-			for (int i = 0; i < data.size(); ++i)
-				element.push_back(data[i]);
-		}
-		else// Else, convert to grayscale.
-		{
-			int pixelCount = 0;//counts the number of pixel vectors read
-			std::vector<unsigned char> tempVec;
-			if (colorDepth == 24) {
-				for (int i = 0; i < data.size(); ++i) {
-					if (i % rowSize < rowSize - padBytes) {
-						if (i > 0 && i % 3 == 0) {
-							real R = tempVec[0] / 255.0;
-							real G = tempVec[1] / 255.0;
-							real B = tempVec[2] / 255.0;
-							real Y = (R * 0.299 + G * 0.587 + B * 0.114);//calculate luminance from formula
-							element.push_back(Y * 255.0);
-							tempVec.clear();
+			std::vector<unsigned char> header;
+			int numberOfBytes = 0;
+			int reservedBytes = 0;
+			int headerSize = 0;
+			int colorDepth = 0;
+			int padBytes = 0;
+			int rowSize = 0;
+
+			//open BMP file
+			FILE* f = fopen(filename.c_str(), "rb");
+
+			//read preliminary file data -- 14 bytes
+			unsigned char prelimData[14];
+			fread(prelimData, sizeof(unsigned char), 14, f);
+			for (int i = 0; i < 14; ++i) { header.push_back(prelimData[i]); }
+			numberOfBytes = (header[5] << 24) ^ (header[4] << 16) ^ (header[3] << 8) ^ header[2];//read number of bytes in file
+			reservedBytes = (header[9] << 24) ^ (header[8] << 16) ^ (header[7] << 8) ^ header[6];//read reserved data
+			headerSize = (header[13] << 24) ^ (header[12] << 16) ^ (header[11] << 8) ^ header[10];//read starting address
+
+			//read and interpret file header data
+			unsigned char* headerData = new unsigned char[headerSize - 14];
+			fread(headerData, sizeof(unsigned char), headerSize - 14, f);//read the 54-byte header
+			for (int i = 0; i < headerSize - 14; ++i) { header.push_back(headerData[i]); }
+
+			//initialize class variables;
+			wdt = (header[21] << 24) ^ (header[20] << 16) ^ (header[19] << 8) ^ header[18];//gives image height 
+			hgt = (header[25] << 24) ^ (header[24] << 16) ^ (header[23] << 8) ^ header[22];//gives image width
+			colorDepth = (header[27] << 8) ^ header[28]; //read color depth to determine color array
+			rowSize = std::floor(((colorDepth * wdt) + 31.0) / 32.0) * 4;
+
+			// Now that the header has been read, load all subsequent bytes.
+			std::vector<unsigned char> data;
+			unsigned char data2;
+			while (fread(&data2, sizeof(unsigned char), 1, f))
+				data.push_back(data2);
+			fclose(f);
+
+			if (colorDepth == 8)// If already grayscale, just copy array of data to element array.
+			{
+				for (int i = 0; i < data.size(); ++i)
+					element.push_back(data[i]);
+			}
+			else// Else, convert to grayscale.
+			{
+				int pixelCount = 0;//counts the number of pixel vectors read
+				std::vector<unsigned char> tempVec;
+				if (colorDepth == 24) {
+					for (int i = 0; i < data.size(); ++i) {
+						if (i % rowSize < rowSize - padBytes) {
+							if (i > 0 && i % 3 == 0)
+							{	// Calculate luminance to convert to grayscale.
+								real R = tempVec[0] / 255.0;
+								real G = tempVec[1] / 255.0;
+								real B = tempVec[2] / 255.0;
+								real Y = (R * 0.299 + G * 0.587 + B * 0.114);
+								element.push_back(Y * 255.0);
+								tempVec.clear();
+							}
+							tempVec.push_back(data[i]);
 						}
-						tempVec.push_back(data[i]);
 					}
 				}
 			}
 		}
 
-		rows = hgt;
-		columns = wdt;
+		return Matrix(hgt, wdt, element);
 	}
 
-	void Matrix::loadCSV(std::string filename)
+	Matrix csvread(std::string filename)
 	{
-		this->clear();
-
+		std::vector<real> element;
 		std::ifstream file1 (filename, std::ios::in);
 		std::string buff = "";
 		int r = 0;
@@ -519,8 +540,7 @@ namespace MathParser
 			element.insert(std::end(element), std::begin(temp), std::end(temp));
 			r++;
 		}
-		rows = r;
-		columns = c;
+		return Matrix(r, c, element);
 	}
 
 	Matrix convolve(Matrix kernel, Matrix img)
@@ -570,28 +590,10 @@ namespace MathParser
 		return x;
 	}
 
-	void Matrix::setRowNonZeroValues(int rw, real x) 
-	{
-		for (int k = 0; k < columns; ++k) {
-			if (std::abs(element[rw * columns + k]) > 0) {
-				element[rw * columns + k] = x;
-			}
-		}
-	}
-
 	void Matrix::setRow(int rw, Vector n) 
 	{
 		for (int k = 0; k < columns; ++k) 
 			element[rw * columns + k] = n[k];
-	}
-
-	void Matrix::setColumnNonZeroValues(int col, real x) 
-	{
-		for (int k = 0; k < rows; ++k) 
-		{
-			if (std::abs(element[k * columns + col]) > 0) 			
-				element[k * columns + col] = x;			
-		}
 	}
 
 	void Matrix::setColumn(int col, Vector n) {
@@ -795,7 +797,7 @@ namespace MathParser
 	 //in the lower right corner.
 		Matrix newEl(r, c);
 		if (r > rows && c > columns) {
-			newEl.identity();
+			newEl = eye(r,c);
 			for (int i = r - rows; i < r; ++i) {
 				for (int j = c - columns; j < c; ++j) {
 					int idx_i = (i - (r - rows));
@@ -804,7 +806,7 @@ namespace MathParser
 				}
 			}
 		}
-		return Matrix(r, c, newEl.element);
+		return newEl;
 	}
 
 	Matrix Matrix::expandToLowerRight(int r, int c) 
@@ -812,14 +814,14 @@ namespace MathParser
 	 //in the upper left corner.
 		Matrix newEl(r, c);
 		if (r > rows && c > columns) {
-			newEl.identity();
+			newEl = eye(r, c);
 			for (int i = 0; i < rows; ++i) {
 				for (int j = 0; j < columns; ++j) {
 					newEl(i, j) = element[i * columns + j];
 				}
 			}
 		}
-		return Matrix(r, c, newEl.element);
+		return newEl;
 	}
 
 	Matrix Matrix::extendRows(int r) {
@@ -842,26 +844,48 @@ namespace MathParser
 		return Matrix(rows, columns + c, newEl.element);
 	}
 
-	Matrix Matrix::concatenate(Matrix A, Matrix B) {//creates a larger matrix from two matrices, where each matrix is next to the other one
+	Matrix hconcat(Matrix A, Matrix B)
+	{
 		int r = A.rows;
-		if (B.rows > A.rows) { r = B.rows; }
+		if (B.rows > A.rows) 
+			r = B.rows;
 		int c = A.columns + B.columns;
 		Matrix C(r, c);
-		for (int i = 0; i < r; ++i) {
-			for (int j = 0; j < c; ++j) {
+		for (int i = 0; i < r; ++i) 
+		{
+			for (int j = 0; j < c; ++j) 
+			{
 				if (j < A.columns && i < A.rows) 
 					C(i, j) = A(i, j);
 				if (j >= A.columns && i < B.rows) 
 					C(i, j) = B(i, j - A.columns);
 			}
 		}
-
 		return C;
 	}
 
-	Matrix Matrix::autoCorrelation(Matrix A) { return A.convolve(A, A); }//auto-correlation is the convolution of a signal with its own conjugate, which is the function itself in a Real valued domain
+	Matrix vconcat(Matrix A, Matrix B)
+	{
+		int r = A.rows + B.rows;
+		int c = A.columns;
+		if (B.columns > A.columns)
+			c = B.columns;
+		Matrix C(r, c);
+		for (int i = 0; i < r; ++i)
+		{
+			for (int j = 0; j < c; ++j)
+			{
+				if (i < A.rows && j < A.columns)
+					C(i, j) = A(i, j);
+				if (i >= A.rows && j < B.columns)
+					C(i, j) = B(i - A.rows, j);
+			}
+		}
+		return C;
+	}
 
-	Matrix Matrix::crossCorrelation(Matrix A, Matrix B) {
+	Matrix crossCorrelation(Matrix A, Matrix B) 
+	{
 		int kCenterX = A.columns / 2;
 		int kCenterY = A.rows / 2;
 
@@ -869,16 +893,17 @@ namespace MathParser
 
 		Vector vals(B.element.size());
 
-		for (int i = 0; i < B.rows; ++i) {
-			for (int j = 0; j < B.columns; ++j) {
-				for (int m = 0; m < A.rows; ++m) {
-					for (int n = 0; n < A.columns; ++n) {
-
-						// index of input signal, used for checking boundary
+		for (int i = kCenterY; i < B.rows-kCenterY; ++i) {
+			for (int j = kCenterX; j < B.columns-kCenterX; ++j) {
+				for (int m = 0; m < A.rows; ++m) 
+				{
+					for (int n = 0; n < A.columns; ++n) 
+					{
+						// Index of input signal, used for checking boundaries.
 						ii = i + (kCenterY - m);
 						jj = j + (kCenterX - n);
 
-						// ignore input samples which are out of bound
+						// Ignore input samples which are out of bounds.
 						if (ii >= 0 && ii < B.rows && jj >= 0 && jj < B.columns) 
 							vals[i * B.columns + j] += B(ii, jj) * A(m, n);
 					}
@@ -889,29 +914,33 @@ namespace MathParser
 	}
 
 
-	Matrix Matrix::convolve(Matrix A, Matrix B) {
-		//covolve Matrix kernel A w/ Matrix B
-		int kCenterX = A.columns / 2;
-		int kCenterY = A.rows / 2;
+	Matrix convolve(Matrix& kernel, Matrix& B) 
+	{	// Covolve Matrix kernel w/ Matrix B
+		int kCenterX = kernel.columns / 2;
+		int kCenterY = kernel.rows / 2;
 
 		int mm, nn, ii, jj;
 
 		Vector vals(B.element.size());
 
-		for (int i = 0; i < B.rows; ++i) {
-			for (int j = 0; j < B.columns; ++j) {
-				for (int m = 0; m < A.rows; ++m) {
-					mm = A.rows - 1 - m;      // row index of flipped kernel
-					for (int n = 0; n < A.columns; ++n) {
-						nn = A.columns - 1 - n;  // column index of flipped kernel
+		for (int i = kCenterY; i < B.rows - kCenterY; ++i) 
+		{
+			for (int j = kCenterX; j < B.columns - kCenterX; ++j) 
+			{
+				for (int m = 0; m < kernel.rows; ++m) 
+				{
+					mm = kernel.rows - 1 - m;// row index of flipped kernel
+					for (int n = 0; n < kernel.columns; ++n) 
+					{
+						nn = kernel.columns - 1 - n;// column index of flipped kernel
 
 						// index of input signal, used for checking boundary
 						ii = i + (kCenterY - mm);
 						jj = j + (kCenterX - nn);
 
-						// ignore input samples which are out of bound
+						// ignore input samples which are out of bounds.
 						if (ii >= 0 && ii < B.rows && jj >= 0 && jj < B.columns) 
-							vals[i * B.columns + j] += B(ii, jj) * A(mm, nn);
+							vals[i * B.columns + j] += B(ii, jj) * kernel(mm, nn);
 					}
 				}
 			}
@@ -1008,10 +1037,14 @@ namespace MathParser
 	Matrix Matrix::populationCovarianceMatrix() 
 	{
 		Matrix M(columns, columns);
-		for (int i = 0; i < columns; ++i) {
-			for (int j = 0; j < columns; ++j) {
-				Vector X1 = column(i) - columnMean(i);
-				Vector X2 = column(j) - columnMean(j);
+		for (int i = 0; i < columns; ++i) 
+		{
+			for (int j = 0; j < columns; ++j) 
+			{
+				Vector temp_i = column(i);
+				Vector temp_j = column(j);
+				Vector X1 =  temp_i - columnMean(i);
+				Vector X2 = temp_j - columnMean(j);
 				M(i, j) = dot(X1, X2) / (rows);
 			}
 		}
@@ -1023,14 +1056,15 @@ namespace MathParser
 		Matrix M(columns, columns);
 		for (int i = 0; i < columns; ++i) {
 			for (int j = 0; j < columns; ++j) {
-				Vector X1 = column(i) - columnMean(i);
-				Vector X2 = column(j) - columnMean(j);
+				Vector temp_i = column(i);
+				Vector temp_j = column(j);
+				Vector X1 = temp_i - columnMean(i);
+				Vector X2 = temp_j - columnMean(j);
 				M(i, j) = dot(X1, X2) / ((rows)-1);
 			}
 		}
 		return M;
 	}
-
 
 	Matrix Matrix::transpose() 
 	{
@@ -1128,10 +1162,25 @@ namespace MathParser
 		return answer;
 	}
 
+	int longestElement(Matrix& M)
+	{
+		int lelem = 0;
+		for (int i = 0; i < M.rows; ++i)
+		{
+			for (int j = 0; j < M.columns; ++j)
+			{
+				int len = getLength(M(i,j));
+				if (len > lelem)
+					lelem = len;
+			}
+		}
+		return lelem;
+	}
+
 	std::string Matrix::to_string(int precision) {
 		std::ostringstream s;
 		int defaultLength = 4;
-		int largestElement = this->largestElement();
+		int largestElement = longestElement(*this);
 		bool tf = isIntegerMatrix();
 		if (tf) 
 			--defaultLength;
@@ -1163,21 +1212,6 @@ namespace MathParser
 			}
 		}
 		return sqrt(answer);
-	}
-
-	int Matrix::largestElement()
-	{
-		int lelem = 0;
-		for (int i = 0; i < rows; ++i) 
-		{
-			for (int j = 0; j < columns; ++j) 
-			{
-				int len = getLength(element[i*columns+j]);
-				if (len > lelem)
-					lelem = len; 				
-			}
-		}
-		return lelem;
 	}
 
 	real Matrix::FrobeniusNorm() 
@@ -1468,8 +1502,7 @@ namespace MathParser
 	}
 
 	Matrix Matrix::directSum(Matrix A, Matrix B) {
-		Matrix T(A.rows + B.rows, A.columns + B.columns);
-		T.identity();
+		Matrix T = eye(A.rows + B.rows, A.columns + B.columns);
 		for (int i = 0; i < T.rows; ++i) {
 			for (int j = 0; j < T.columns; ++j) {
 				if (i < A.rows && j < A.columns) 
@@ -1483,8 +1516,7 @@ namespace MathParser
 
 	Matrix Matrix::tensorProduct(Matrix A, Matrix B) 
 	{
-		Matrix T(A.rows * B.rows, A.columns * B.columns);
-		T.identity();
+		Matrix T = eye(A.rows * B.rows, A.columns * B.columns);
 		int Rbound = (A.rows - 1);
 		int Cbound = (A.columns - 1);
 		int Rcounter = 0;
@@ -1503,31 +1535,35 @@ namespace MathParser
 		return T;
 	}
 
-	bool Matrix::canSwapOutZeroDiagonals() {
-		for (int i = 0; i < columns; ++i) {
-			if (sumColumn(i) == 0) { return false; }
+	bool canSwapOutZeroDiagonals(Matrix& M) {
+		for (int i = 0; i < M.columns; ++i) 
+		{
+			if (!M.sumColumn(i)) 
+				return false;
 		}
 		return true;
 	}
 
-	Matrix Matrix::swapOutZeroDiagonals() 
+	Matrix swapOutZeroDiagonals(Matrix M) 
 	{
-		Matrix M(rows, columns, element);
-		while (M.zeroInDiag()) {
-			for (int i = 0; i < rows; ++i) {
-				if (!M(i, i)) 
+		Matrix M2 = M;
+		while (zeroInDiag(M2)) 
+		{
+			for (int i = 0; i < M2.rows; ++i) {
+				if (!M2(i, i)) 
 				{
-					for (int j = 0; j < columns; ++j) {
-						if (M(i, j) && M(j, i) && i != j) 
+					for (int j = 0; j < M2.columns; ++j) 
+					{
+						if (M2(i, j) && M2(j, i) && i != j) 
 						{   // Choose rows to swap to create M non-zero diagonal
-							M.swapRows(i, j); 
-							j = columns;
+							M2.swapRows(i, j); 
+							j = M.columns;
 						}
 					}
 				}
 			}
 		}
-		return M;
+		return M2;
 	}
 
 	real Matrix::columnAbsMax(int n) {
@@ -1664,9 +1700,9 @@ namespace MathParser
 		//Gauss-Jordan elimination
 		for (i = 0; i < rows; i++) 
 		{
-			if (zeroInDiag() && canSwapOutZeroDiagonals()) 
+			if (zeroInDiag(*this) && canSwapOutZeroDiagonals(*this)) 
 			 //remove zeroes in diagonal if possible
-				m = m.swapOutZeroDiagonals(); 
+				m = swapOutZeroDiagonals(m); 
 			int ind = m.getPivot(i);
 			if (ind >= 0) {
 				piv = m(i, ind);
@@ -1703,8 +1739,8 @@ namespace MathParser
 		Matrix m(rows, columns, element);
 		//Gauss-Jordan elimination
 		for (i = rows - 1; i >= 0; --i) {
-			if (zeroInDiag() && canSwapOutZeroDiagonals()) 
-				m = m.swapOutZeroDiagonals();//remove zeroes in diagonal if possible
+			if (zeroInDiag(*this) && canSwapOutZeroDiagonals(*this)) 
+				m = swapOutZeroDiagonals(m);//remove zeroes in diagonal if possible
 			int ind = m.getReversePivot(i);
 			if (ind >= 0) {
 				piv = m(i, ind);
@@ -1738,8 +1774,8 @@ namespace MathParser
 		Matrix m(rows, columns, element);
 		//Gauss-Jordan elimination
 		for (i = 0; i < rows; i++) {
-			if (zeroInDiag() && canSwapOutZeroDiagonals()) 
-				m = m.swapOutZeroDiagonals(); //remove zeroes in diagonal if possible
+			if (zeroInDiag(*this) && canSwapOutZeroDiagonals(*this)) 
+				m = swapOutZeroDiagonals(m); //remove zeroes in diagonal if possible
 			int ind = m.getPivot(i);
 			if (ind >= 0) {
 				piv = m(i, ind);
@@ -1805,20 +1841,6 @@ namespace MathParser
 		}
 	}
 
-	std::vector<int> Matrix::pivotColumns() {
-		std::vector<int> piv;
-		for (int i = 0; i < rows; ++i) {
-			for (int j = 0; j < columns; ++j) {
-				real val = element[i * columns + j];
-				if (val != 0) {
-					piv.push_back(j);
-					j = columns + 1;
-				}
-			}
-		}
-		return piv;
-	}
-
 	Vector Matrix::solve(Vector b)
 	{//solve for Ax=b, where x will be the returned vector of variable values
 	 //if m==n
@@ -1836,13 +1858,14 @@ namespace MathParser
 
 	}
 
-	Matrix Matrix::nullSpace() {
+	Matrix Matrix::nullSpace() 
+	{
 		Matrix RRE = GaussianElimination();
 		int kernelDimension = RRE.rank();//the rank of the matrix is equivalent to the dimension of the kernel
 		//if (columns == kernelDimension) { return Matrix(1, 1); }
 
 		//for a RRE matrix, the non-pivot columns are the free variables
-		std::vector<int> piv = RRE.pivotColumns();
+		std::vector<int> piv = pivotColumns(RRE);
 		RRE.removeZeroRows();
 
 		std::vector<Vector> ans;
@@ -1852,10 +1875,10 @@ namespace MathParser
 				Matrix Mcopy(RRE);//set up matrix
 
 				//make one of the pivot columns = 1, the others = 0. rotate which one is 1 over each iteration to find all distinct solution vectors
-				for (int p = 0; p < piv.size(); ++p) {
-					if (p != i) { Mcopy.setColumnNonZeroValues(piv[p], 0); }
-				}
-				Mcopy.setColumnNonZeroValues(piv[i], 1);
+				for (int p = 0; p < piv.size(); ++p) 				
+					if (p != i) 
+						setColumnNonZeroValues(Mcopy, piv[p], 0);				
+				setColumnNonZeroValues(Mcopy, piv[i], 1);
 
 				//run the solver with for Ax=b where b is the 0 vector
 				ans.push_back(Mcopy.solve(Vector(columns)));
@@ -1876,11 +1899,18 @@ namespace MathParser
 			for (int i = j + 2; i < rows; ++i) {
 				Vector temp = M.row(j + 1);
 				if (M(i, j) != 0) {
-					if (abs(M(i, j)) == abs(pivot)) {
-						if (M(i, j) == pivot) { temp*=-1; goto skipUH; }
-						if ((M(i, j) == (-1 * pivot)) || ((-1 * M(i, j)) == pivot)) { goto skipUH; }
+					if (abs(M(i, j)) == abs(pivot)) 
+					{
+						if (M(i, j) == pivot) 
+						{ 
+							temp*=-1; 
+							goto skipUH; 
+						}
+						if ((M(i, j) == (-1 * pivot)) || ((-1 * M(i, j)) == pivot)) 
+							goto skipUH;
 					}
-					if (abs(M(i, j)) != abs(pivot)) { temp*=(-M(i, j) / pivot); }
+					if (abs(M(i, j)) != abs(pivot)) 					
+						temp*=(-M(i, j) / pivot); 					
 
 				skipUH:
 					M.addToRow(i, temp);
@@ -1931,8 +1961,7 @@ namespace MathParser
 	{
 		Matrix next(rows, columns, element);
 		for (int k = 1; k < rows; ++k) {
-			Matrix M(columns, rows);
-			M.identity();
+			Matrix M = eye(columns, rows);
 			for (int p = 1; p < columns + 1; ++p) 
 			{
 				if (p == (rows - k)) 
@@ -1947,8 +1976,7 @@ namespace MathParser
 						(next.element[((columns - k) * columns) + (columns - k - 1)]); 
 				}
 			}
-			Matrix Minv(columns, rows);
-			Minv.identity();
+			Matrix Minv = eye(columns, rows);
 			for (int p = 1; p < columns + 1; ++p) 
 			{ 
 				Minv.element[(columns - k - 1) * columns + (p - 1)] = 
@@ -1968,79 +1996,7 @@ namespace MathParser
 		return Matrix(rows, columns, next.element);
 	}
 
-
-	bool Matrix::zeroInDiag() 
-	{//Test if there are any 0's in the diagonal of a matrix.
-		for (int i = 0; i < rows; ++i)
-			if (!element[i * columns + i])
-				return true;		
-		return false;
-	}
-
-	real Matrix::det() 
-	{//Determinant by exact (ie non-numerical) method, achieved by taking the 
-	 //product of diagonals in the reduced row echelon form (via Gaussian elimination).
-		if (rows != columns) 
-			return 0;
-		if (rows == 1) 
-			return element[0];
-
-		//MATRICES OF 2nd ORDER
-		if (rows == 2)
-			return (element[0] * element[columns + 1] - element[1] * element[columns]);		
-
-		//NTH ORDER -- use elimination
-		Matrix M(rows, columns, element);
-
-		int signFlip = 0;
-		while (M.zeroInDiag() == true) {
-			for (int i = 0; i < rows; ++i) {
-				if (M(i, i) == 0) {
-					for (int j = 0; j < columns; ++j) {
-						if (M(i, j) != 0 && M(j, i) != 0 && i != j) 
-						{ //Choose rows to swap to create M non-zero diagonal
-							M.swapRows(i, j); j = columns;
-							++signFlip;	// Row swaps flip the sign of the determinant.
-						}
-					}
-				}
-			}
-		}
-
-		//elimination with 3 cases:  
-		for (int j = 0; j < columns; ++j) 
-		{
-			real pivot = M(j, j);
-			for (int i = j + 1; i < rows; ++i) {
-				Vector temp = M.row(j);
-				if (M(i, j) != 0) {
-					if (abs(M(i, j)) == abs(pivot)) {
-						if (M(i, j) == pivot) 
-						{ 
-							temp*= -1; 
-							goto skip; 
-						}
-						if ((M(i, j) == (-1 * pivot)) || ((-1 * M(i, j)) == pivot)) 
-							goto skip;
-					}
-					if (abs(M(i, j)) != abs(pivot)) 
-					{ 
-						temp*= (-M(i, j) / pivot); 
-					}
-				skip:
-					M.addToRow(i, temp);
-				}
-			}
-		}
-
-		real answer = 1;
-		for (int i = 0; i < columns; ++i) 
-			answer *= M(i, i);//multiply diagonals to get determinant		
-		answer *= pow(-1, signFlip % 2);//fix flipped determinant sign.
-		return answer;
-	}
-
-	real Matrix::detExact() 
+	real Matrix::det() 	 
 	{// Use Gauss-Jordan Elimination to get upper-triangle of matrix, then 
 	 // multiply trace values to get the determinant.
 		Matrix m = upperTriangularize();
@@ -2054,7 +2010,7 @@ namespace MathParser
 	{
 		Matrix A(rows, columns, element);
 
-		while (A.zeroInDiag()) 
+		while (zeroInDiag(A)) 
 		{
 			for (int i = 0; i < rows; ++i) 
 			{
@@ -2232,21 +2188,22 @@ namespace MathParser
 		return(Mat);
 	}
 
-	std::vector<Matrix> Matrix::LU() {
+	std::vector<Matrix> LU(Matrix& M) 
+	{
 		std::vector<Matrix> answer;
-		Matrix A(rows, columns, element);
-		Matrix L(rows, columns);
-		Matrix U(rows, columns);
+		Matrix A = M;
+		Matrix L(M.rows, M.columns);
+		Matrix U(M.rows, M.columns);
 
 		int i, j, k;
 		real sum = 0;
 
 		// Set row diagonals to 1.
-		for (i = 0; i < rows; i++)
+		for (i = 0; i < M.rows; i++)
 			U(i, i) = 1;
 
-		for (j = 0; j < columns; j++) {
-			for (i = j; i < rows; i++) {
+		for (j = 0; j < M.columns; j++) {
+			for (i = j; i < M.rows; i++) {
 				sum = 0;
 				for (k = 0; k < j; k++) {
 					sum = sum + L(i, k) * U(k, j);
@@ -2254,7 +2211,8 @@ namespace MathParser
 				L(i, j) = A(i, j) - sum;
 			}
 
-			for (i = j; i < rows; i++) {
+			for (i = j; i < M.rows; i++) 
+			{
 				sum = 0;
 				for (k = 0; k < j; k++) {
 					sum = sum + L(j, k) * U(k, i);
@@ -2268,77 +2226,6 @@ namespace MathParser
 		answer.push_back(L);
 		answer.push_back(U);
 		return answer;
-	}
-
-	Matrix Matrix::L() {
-		Matrix A(rows, columns, element);
-		Matrix L(rows, columns);
-		Matrix U(rows, columns);
-
-		int i, j, k;
-		real sum = 0;
-
-		// Set row diagonals to 1.
-		for (i = 0; i < rows; i++)
-			U(i, i) = 1;
-
-		for (j = 0; j < columns; j++) {
-			for (i = j; i < rows; i++) {
-				sum = 0;
-				for (k = 0; k < j; k++) {
-					sum = sum + L(i, k) * U(k, j);
-				}
-				L(i, j) = A(i, j) - sum;
-			}
-
-			for (i = j; i < rows; i++) {
-				sum = 0;
-				for (k = 0; k < j; k++) {
-					sum = sum + L(j, k) * U(k, i);
-				}
-				real divisor = L(j, j);
-				if (!divisor)//prevent division by 0.
-					divisor = std::numeric_limits<real>::min();								
-				U(j, i) = ((A(j, i) - sum) / divisor);
-			}
-		}
-		return L;
-	}
-
-	Matrix Matrix::U() 
-	{
-		Matrix A(rows, columns, element);
-		Matrix L(rows, columns);
-		Matrix U(rows, columns);
-
-		int i, j, k;
-		real sum = 0;
-
-		// Set row diagonals to 1.
-		for (i = 0; i < rows; i++)
-			U(i, i) = 1;		
-
-		for (j = 0; j < columns; j++) {
-			for (i = j; i < rows; i++) 
-			{
-				sum = 0;
-				for (k = 0; k < j; k++)
-					sum = sum + L(i, k) * U(k, j);				
-				L(i, j) = A(i, j) - sum;
-			}
-
-			for (i = j; i < rows; i++) {
-				sum = 0;
-				for (k = 0; k < j; k++) {
-					sum = sum + L(j, k) * U(k, i);
-				}
-				real divisor = L(j, j);
-				if (!divisor)//prevent division by 0.
-					divisor = std::numeric_limits<real>::min();								
-				U(j, i) = (A(j, i) - sum) / divisor;
-			}
-		}
-		return U;
 	}
 
 	std::vector<Matrix> Matrix::QR() 
@@ -2378,72 +2265,6 @@ namespace MathParser
 		return A;
 	}
 
-	Matrix Matrix::Q() {//QR decomposition by Gram-Schmidt process
-		Matrix Q(rows, columns);
-		Matrix R(rows, columns);
-
-		//set up Q matrix
-		//===============
-		Q.setColumn(0, column(0).length());
-		for (int i = 1; i < rows - 1; ++i) {
-			Vector c = column(i);
-			for (int j = i; j > 0; --j) {
-				Vector e = Q.column(j - 1);
-				real dp = dot(c, e);
-				Vector tp = (e* dp);
-				c = (c - tp);
-			}
-			c = c.length();
-			Q.setColumn(i, c);
-		}
-
-		//set up R matrix
-		//===============
-		for (int i = 0; i < rows; ++i) {
-			for (int j = 0; j < columns; ++j) {
-				if (j >= i) {
-					Vector a = column(j);
-					Vector b = Q.column(i);
-					real temp = dot(a, b);
-					R(i, j) = temp;
-				}
-			}
-		}
-		return Matrix(rows, columns, Q.element);
-	}
-
-	Matrix Matrix::R() {//QR decomposition by Gram-Schmidt process
-		Matrix Q(rows, columns);
-		Matrix R(rows, columns);
-
-		//set up Q matrix
-		Q.setColumn(0, column(0).length());
-		for (int i = 1; i < rows - 1; ++i) {
-			Vector c = column(i);
-			for (int j = i; j > 0; --j) {
-				Vector e = Q.column(j - 1);
-				real dp = dot(c, e);
-				Vector tp = (e* dp);
-				c -= tp;
-			}
-			c = c.length();
-			Q.setColumn(i, c);
-		}
-
-		//set up R matrix
-		for (int i = 0; i < rows; ++i) {
-			for (int j = 0; j < columns; ++j) {
-				if (j >= i) {
-					Vector a = column(j);
-					Vector b = Q.column(i);
-					real temp = dot(a, b);
-					R(i, j) = temp;
-				}
-			}
-		}
-		return Matrix(rows, columns, R.element);
-	}
-
 	Matrix Matrix::inverseByQR() 
 	{
 		if (!det()) 
@@ -2454,8 +2275,7 @@ namespace MathParser
 	}
 
 	Matrix Matrix::GramSchmidt() 
-	{//orthogonalization by Gram-Schmidt process using Gaussian Elimination
-
+	{	//Orthogonalization by Gram-Schmidt process using Gaussian Elimination.
 		if (!det())
 			return Matrix();
 		Matrix Aug(rows, columns, element);
@@ -2463,7 +2283,7 @@ namespace MathParser
 		AT = AT.transpose();
 		Matrix A = *this * AT;
 
-		while (A.zeroInDiag()) 
+		while (zeroInDiag(A)) 
 		{
 			for (int i = 0; i < rows; ++i) 
 			{
@@ -2484,7 +2304,7 @@ namespace MathParser
 		}
 
 		for (int j = 0; j < columns; ++j) 
-		{//Iterate down matrix and eliminate the lower triangle of values.
+		{	// Iterate down matrix and eliminate the lower triangle of values.
 			real pivot = A(j, j);
 			for (int i = j + 1; i < rows; ++i) {
 				if (i != j && A(i, j) != 0) {
@@ -2516,7 +2336,7 @@ namespace MathParser
 		}
 
 		for (int i = 0; i < rows; ++i) 
-		{//Make diagonals into all 1's.
+		{	//Make diagonals into all 1's.
 			if (A(i, i) != 0 && A(i, i) != 1) {
 				real a = ((real)1 / (A(i, i)));
 				A.multiplyRow(i, a);
@@ -2526,20 +2346,20 @@ namespace MathParser
 		return Matrix(rows, columns, Aug.element);
 	}
 
-	std::vector<int> Matrix::JacobiIndexing() 
+	std::vector<int> JacobiIndexing(Matrix& M) 
 	{// Returns indices i,j for largest element in matrix quickly for use in 
 	 //'JacobiTransformation()' function.
 		std::vector<int> answer;
 		answer.push_back(-1);
 		answer.push_back(-1);
 		real largest = 0;
-		for (int i = 0; i < rows; ++i) 
+		for (int i = 0; i < M.rows; ++i) 
 		{
-			for (int j = 0; j < columns; ++j) 
+			for (int j = 0; j < M.columns; ++j) 
 			{
-				if (i != j && std::abs(element[i * columns + j]) > largest) 
+				if (i != j && std::abs(M(i,j)) > largest) 
 				{
-					largest = std::abs(element[i * columns + j]);
+					largest = std::abs(M(i, j));
 					answer[0] = i;
 					answer[1] = j;
 				}
@@ -2550,8 +2370,7 @@ namespace MathParser
 
 	Matrix Matrix::GivensRotationMatrix(real a1, real a2, int r1, int r2) 
 	{//eliminate a2 with a1, a1 is in row r1, a2 is in row r2.
-		Matrix el(rows, rows);
-		el.identity();
+		Matrix el = eye(rows, rows);
 
 		real r = sqrt((a1 * a1) + (a2 * a2));
 		real s = a1 / r;
@@ -2565,29 +2384,25 @@ namespace MathParser
 		return Matrix(rows, rows, el.element);
 	}
 
-	Matrix Matrix::JacobiRotationMatrix(int p, int q, real c, real s) 
-	{//Used in Jacobi Transformation -- will diagonalize a matrix and produce an 
-	 //eigenvector matrix.
-		Matrix el(rows, rows);
-		el.identity();
-
-		el.element[p * rows + p] = c;
-		el.element[q * rows + q] = c;
-		el.element[p * rows + q] = s;
-		el.element[q * rows + p] = -s;
-		return Matrix(rows, rows, el.element);
+	Matrix JacobiRotationMatrix(Matrix& M, int p, int q, real c, real s) 
+	{	//Helper function used in Jacobi Transformation.
+		Matrix el = eye(M.rows, M.rows);
+		el.element[p * M.rows + p] = c;
+		el.element[q * M.rows + q] = c;
+		el.element[p * M.rows + q] = s;
+		el.element[q * M.rows + p] = -s;
+		return Matrix(M.rows, M.rows, el.element);
 	}
 
-	std::vector<Matrix> Matrix::JacobiTransformation(highpUint limit)
-	{//outputs an array with both diagonalized matrix and eigenvectors
-		Matrix D(rows, columns, element); //matrix to rotate/diagonalize
-		Matrix Eigenvectors(rows, columns);//matrix of Eigenvectors produced by successive Jacobi rotations.
-		Eigenvectors.identity();
+	std::vector<Matrix> JacobiTransformation(Matrix& M, highpUint limit)
+	{	// Outputs an array with both diagonalized matrix and eigenvectors
+		Matrix D = M;//matrix to rotate/diagonalize
+		Matrix Eigenvectors = eye(M.rows, M.columns);//matrix of Eigenvectors produced by successive Jacobi rotations.
 
 		int counter = 0;//counts the number of iterations, to stop at some set limit.	
 		while (!D.isDiagonalized() && counter < limit) 
 		{
-			std::vector<int> elem = D.JacobiIndexing();
+			std::vector<int> elem = JacobiIndexing(D);
 			if (elem[0] > D.rows || elem[1] > D.columns || elem[0] < 0 || elem[1] 
 				< 0 || elem[0] == elem[1]) 
 				break;
@@ -2595,11 +2410,12 @@ namespace MathParser
 			int q = elem[1];
 			real angle = (D(q, q) - D(p, p)) / (2 * D(p, q));
 			int sign = 1;
-			if (angle < 0) { sign = -1; }
+			if (angle < 0) 
+				sign = -1;
 			real t = sign / (abs(angle) + sqrt((angle * angle) + 1));
 			real c = 1 / sqrt((t * t) + 1);
 			real s = t * c;
-			Matrix rot = D.JacobiRotationMatrix(p, q, c, s);
+			Matrix rot = JacobiRotationMatrix(D, p, q, c, s);
 			Matrix rotT = rot.transpose();
 			D = rotT * D;
 			D *= rot;
@@ -2616,7 +2432,7 @@ namespace MathParser
 	{
 		if (isSymmetric()) //If a symmetric matrix, simply use Jacobi transformation method.
 		{
-			std::vector<Matrix> EV = JacobiTransformation();
+			std::vector<Matrix> EV = JacobiTransformation(*this);
 			return EV[1];
 		}
 		else //Else, use iterative QR decomp method.
@@ -2626,7 +2442,8 @@ namespace MathParser
 			Matrix A2 = qr[1] * qr[0];
 
 			for (int i = 1; i < iterations; ++i) 
-			{//then, QR decomposition. Use Q as multiplicand where Eigenvectors = Q1*Q2*...Qn
+			{	// Then, QR decomposition. Use Q as multiplicand where 
+				// Eigenvectors = Q1*Q2*...Qn
 				qr = A2.QR();
 				if (qr[0].rows == 0 && qr[1].rows == 0) 
 					break;
@@ -2776,7 +2593,7 @@ namespace MathParser
 	std::vector<ComplexNumber> Matrix::eigenvaluesRealAndComplexExact(int iterations) 
 	{	//Finds real eigenvalues by method of QR algorithm with Hessenberg intermediate step,
 		//then either factors those roots to get the last few complex roots or uses the 
-		//numerical Durand-Kerner method of root-finding
+		//numerical Durand-Kerner method of root-finding.
 
 		Polynomial p = characteristicPolynomial();
 		Vector realRoots = p.realRoots();
@@ -2792,16 +2609,23 @@ namespace MathParser
 		real lowboundC = bounds[0];
 
 		for (int i = 0; i < realRoots.size(); ++i) {
-			if (std::abs(int(p.size()) - (int)realRoots.size()) <= 3) {
-				//Use the shift method only if the real roots reduce it down to an easily calculable size (order 2 or less),
-				//otherwise the results will be inaccurate
-				if (p.size() <= 3) { i = realRoots.size(); break; }
-				if (p.size() > 3) { p = p.factorOutBinomial(realRoots[i]); }
+			if (std::abs(int(p.size()) - (int)realRoots.size()) <= 3) 
+			{// Use the shift method only if the real roots reduce it down to an easily 
+			 // calculable size (order 2 or less), otherwise the results will be inaccurate.
+				if (p.size() <= 3) 
+				{ 
+					i = realRoots.size(); 
+					break; 
+				}
+				if (p.size() > 3) 				 
+					p = p.factorOutBinomial(realRoots[i]); 				
 			}
 		}
-		if (p.size() < 3) { return complexRoots; }
+		if (p.size() < 3) 
+			return complexRoots;
 
-		if (p.size() == 3) {
+		if (p.size() == 3) 
+		{
 			real part2 = pow(p[1], 2) - (4 * p[0] * p[2]);
 			if (part2 < 0) {
 				part2 = part2 / (2 * p[2]);
@@ -2813,7 +2637,7 @@ namespace MathParser
 		}
 
 		if (p.size() > 3) 
-		{	//start finding roots with Durand-Kerner method
+		{	// Start finding roots with Durand-Kerner method.
 			ComplexNumber z = ComplexNumber(lowbound, lowboundC);
 			int size = sizeof(z);
 			std::vector<ComplexNumber> R;
@@ -2831,9 +2655,9 @@ namespace MathParser
 			}
 
 			for (int i = 0; i < R.size(); ++i) 
-			{ //now filter out all the bad results
+			{	// Now filter out all the bad results.
 				if (R[i].im() != 0) 
-				{//only complex roots accepted
+				{	// Only complex roots accepted.
 					R[i] = p.NewtonsMethodComplex(p,R[i]);
 					ComplexNumber temp = p.evaluate(R[i]);
 					real a = std::abs(temp.re());
@@ -2845,9 +2669,11 @@ namespace MathParser
 						for (int i = 0; i < complexRoots.size(); ++i) {
 							real x = std::abs(complexRoots[i].re());
 							real y = std::abs(complexRoots[i].im());
-							if (std::abs(a - x) < 0.001 && std::abs(b - y) < 0.001) { isSimilar = true; }
+							if (std::abs(a - x) < 0.001 && std::abs(b - y) < 0.001) 
+								isSimilar = true;
 						}
-						if (!isSimilar) { //if this is indeed a new root, save the root and its conjugate
+						if (!isSimilar) 
+						{	// If this is indeed a new root, save the root and its conjugate.
 							complexRoots.push_back(R[i]);
 							complexRoots.push_back(ComplexNumber(R[i].re(), R[i].im() * -1));
 						}
@@ -2865,7 +2691,7 @@ namespace MathParser
 		Matrix v;
 		Vector egv;
 		for (int i = 0; i < A.rows; ++i) 
-		{//A' = A - (eigenvalue)*U*UT
+		{	//A' = A - (eigenvalue)*U*UT
 			v = A.dominantEigenvector();
 			Matrix A_1 = A * v;
 			A_1 *= v;
@@ -2879,7 +2705,6 @@ namespace MathParser
 			Matrix v_t = v.transpose();
 			Matrix U = v * v_t;
 
-			//U.display();
 			U = U * (-1.0 * eigenval);
 			A = A.add(A, U);
 		}
@@ -2892,20 +2717,23 @@ namespace MathParser
 		std::vector<Matrix> QR;
 
 		int iterations = pow((A.rows * A.columns), 2);
-		for (int i = 0; i < iterations; ++i) {//first, LU decomposition
-			QR = A.LU();
+		for (int i = 0; i < iterations; ++i) 
+		{//first, LU decomposition
+			QR = LU(A);
 			if (QR[0].rows == 0 && QR[1].rows == 0) 
 				break;
 			A = QR[1] * QR[0];
 		}
 
-		for (int i = 0; i < iterations; ++i) {//then, QR decomposition
+		for (int i = 0; i < iterations; ++i) 
+		{//then, QR decomposition
 			QR = A.QR();
 			if (QR[0].rows == 0 && QR[1].rows == 0) 
 				break;
 			A = QR[1] * QR[0];
 		}
-		for (int i = 0; i < iterations; ++i) {//then, QR decomposition
+		for (int i = 0; i < iterations; ++i) 
+		{//then, QR decomposition
 			QR = A.HouseholderQR();
 			if (QR[0].rows == 0 && QR[1].rows == 0) 
 				break;
@@ -2916,26 +2744,30 @@ namespace MathParser
 	}
 
 	Matrix Matrix::eigenvalueMatrix(Matrix A, int loops) 
-	{// Recursive version of eigenvalueMatrix calculation.
-		if (loops <= 1) { return A; }
+	{
+		if (loops <= 1) 		
+			return A; 		
 		--loops;
 		std::vector<Matrix> QR;
 
 		int iterations = (A.rows * A.columns);
-		for (int i = 0; i < iterations; ++i) {//first, LU decomposition
-			QR = A.LU();
+		for (int i = 0; i < iterations; ++i) 
+		{//first, LU decomposition
+			QR = LU(A);
 			if (QR[0].rows == 0 && QR[1].rows == 0) 
 				break;
 			A = QR[1] * QR[0];
 		}
 
-		for (int i = 0; i < iterations; ++i) {//then, QR decomposition
+		for (int i = 0; i < iterations; ++i) 
+		{//then, QR decomposition
 			QR = A.QR();
 			if (QR[0].rows == 0 && QR[1].rows == 0) 
 				break;
 			A = QR[1] * QR[0];
 		}
-		for (int i = 0; i < iterations; ++i) {//then, QR decomposition
+		for (int i = 0; i < iterations; ++i) 
+		{//then, QR decomposition
 			QR = A.HouseholderQR();
 			if (QR[0].rows == 0 && QR[1].rows == 0) 
 				break;
@@ -2943,15 +2775,6 @@ namespace MathParser
 		}
 
 		return eigenvalueMatrix(A, loops);
-	}
-
-	void Matrix::power(real n) 
-	{//exponentiates all elements in the matrix by some power
-		for (int i = 0; i < rows; ++i) {
-			for (int j = 0; j < columns; ++j) {
-				element[i * columns + j] = pow(element[i * columns + j], n);
-			}
-		}
 	}
 
 	Matrix Matrix::leastSquares(Matrix X, Matrix Y) 
@@ -3216,8 +3039,7 @@ namespace MathParser
 	std::vector<Matrix> Matrix::HouseholderQR() 
 	{//given some matrix, this produces its Householder QR factorization
 		Matrix A = *this;//copy this matrix.
-		Matrix Q(rows, columns);
-		Q.identity();
+		Matrix Q = eye(rows, columns);
 		for (int j = 0; j < columns - 1; ++j) {
 			Vector temp = A.column(j);
 			Vector vec;
@@ -3228,8 +3050,7 @@ namespace MathParser
 			Matrix Vec(rows - j, 1, vec);
 			Matrix H = Vec.GramMatrix(Vec);
 			H *= 2;
-			Matrix I(rows - j, columns - j);
-			I.identity();
+			Matrix I = eye(rows - j, columns - j);
 			H = I - H;
 			if (j > 0) { H = H.expandToUpperLeft(rows, columns); }
 			A = H * A;
@@ -3269,19 +3090,18 @@ namespace MathParser
 	Matrix directionMatrix(Vector v) 
 	{
 		int sz = v.size() + 1;
-		Matrix A(sz, sz);
-		A.identity();
+		Matrix A = eye(sz, sz);
 		for (int i = 0; i < v.size(); ++i) 
 			A(i, i) = v[i];
 		return A;
 	}
 
-	Matrix identityMatrix(int n) 
+	Matrix eye(int n)
 	{ 
-		return identityMatrix(n, n); 
+		return eye(n, n);
 	}
 
-	Matrix identityMatrix(int n, int m) 
+	Matrix eye(int n, int m)
 	{
 		Vector vals(n * m);
 		for (int i = 0; i < n; ++i) 
@@ -3324,8 +3144,7 @@ namespace MathParser
 		{//3D rotation matrix (contained in a 4x4 homogeneous coordinate matrix)
 			if (v[1] == 1) 
 			{//x-axis rotation
-				Matrix M(4, 4);
-				M.identity();
+				Matrix M = eye(4, 4);
 				M(1, 1) = (v[0]);
 				M(1, 2) = (v[0]);
 				M(2, 1) = (v[0]);
@@ -3334,8 +3153,7 @@ namespace MathParser
 			}
 			if (v[2] == 1) 
 			{//y-axis rotation
-				Matrix M(4, 4);
-				M.identity();
+				Matrix M = eye(4, 4);
 				M(0, 0) = (v[0]);
 				M(0, 2) = (v[0]);
 				M(2, 0) = (v[0]);
@@ -3344,8 +3162,7 @@ namespace MathParser
 			}
 			if (v[3] == 1) 
 			{//z-axis rotation
-				Matrix M(4, 4);
-				M.identity();
+				Matrix M = eye(4, 4);
 				M(0, 0) = (v[0]);
 				M(0, 1) = (v[0]);
 				M(1, 0) = (v[0]);
@@ -3358,8 +3175,7 @@ namespace MathParser
 
 	Matrix scalingMatrix(Vector v) {
 		int sz = v.size() + 1;
-		Matrix A(sz, sz);
-		A.identity();
+		Matrix A = eye(sz, sz);
 		for (int i = 0; i < v.size(); ++i) 
 			A(i, i) = v[i];
 		return A;
@@ -3370,8 +3186,7 @@ namespace MathParser
 			return Matrix();
 		if (v.size() >= 3) 
 		{
-			Matrix A(4, 4);
-			A.identity();
+			Matrix A = eye(4, 4);
 			for (int i = 0; i < 3; ++i) 
 				A(i, A.columns - 1) = v[i];
 			return A;
