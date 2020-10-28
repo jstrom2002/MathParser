@@ -76,9 +76,10 @@ namespace MathParser
 
 	Matrix::Matrix(Vector v)
 	{
+		rows = columns = v.size();
 		element.resize(v.size() * v.size(), 0);
 		for (int i = 0; i < v.size(); ++i)
-			set(i, i, v[i]);
+			element[i * v.size() + i] = v[i];
 	}
 
 	Matrix::Matrix(int row, int col, std::vector<real> element2) 
@@ -114,14 +115,20 @@ namespace MathParser
 		rows = n; columns = m;
 	}
 
-	real Matrix::get(int i, int j) 
+	real& Matrix::operator()(int r, int c) 
 	{ 
-		return element[(i * columns) + j]; 
+		return element[r * columns + c]; 
 	}
 
-	void Matrix::set(int i, int j, real x) 
+	real Matrix::operator()(int r, int c) const 
 	{ 
-		element[(i * columns) + j] = x; 
+		return element[r * columns + c]; 
+	};
+
+	void Matrix::clear() 
+	{ 
+		element.clear(); 
+		rows = columns = 0; 
 	}
 
 	int Matrix::size() 
@@ -131,10 +138,13 @@ namespace MathParser
 
 	real Matrix::maxValue() 
 	{
-		real x = 0;
-		for (int i = 0; i < rows; ++i) {
-			for (int j = 0; j < columns; ++j) {
-				if (std::abs(get(i, j)) > x) { x = get(i, j); }
+		real x = -std::numeric_limits<real>::max();
+		for (int i = 0; i < rows; ++i) 
+		{
+			for (int j = 0; j < columns; ++j) 
+			{
+				if (element[i * columns + j] > x) 
+					x = element[i * columns + j];
 			}
 		}
 		return x;
@@ -160,7 +170,7 @@ namespace MathParser
 		int counter = 0;
 		for (int a = i; a <= i2; ++a) {
 			for (int b = j; b <= j2; ++b) {
-				vals[counter] = get(a, b);
+				vals[counter] = element[a * columns + b];
 				++counter;
 			}
 		}
@@ -171,7 +181,7 @@ namespace MathParser
 	{
 		Vector vals;
 		for (int i = 0; i < rows; ++i) {
-			vals.push_back(get(i, i));
+			vals.push_back(element[i * columns + i]);
 		}
 		return vals;
 	}
@@ -207,9 +217,10 @@ namespace MathParser
 
 		while (A.zeroInDiag() == true) {
 			for (int i = 0; i < rows; ++i) {
-				if (A.get(i, i) == 0) {
+				if (A(i, i) == 0) {
 					for (int j = 0; j < columns; ++j) {
-						if (A.get(i, j) != 0 && A.get(j, i) != 0 && i != j) { //carefully choose rows to swap to create a non-zero diagonal
+						if (A(i, j) != 0 && A(j, i) != 0 && i != j) 
+						{ //choose rows to swap to create a non-zero diagonal
 							A.swapRows(i, j);
 							Aug.swapRows(i, j);
 							j = columns;
@@ -222,24 +233,24 @@ namespace MathParser
 		//go down and eliminate the lower triangle of values
 		for (int j = 0; j < columns; ++j) 
 		{
-			real pivot = A.get(j, j);
+			real pivot = A(j, j);
 			for (int i = 0; i < rows; ++i) {
-				if (i != j && A.get(i, j) != 0) {
+				if (i != j && A(i, j) != 0) {
 					Vector temp = A.row(j);
 					Vector temp2 = Aug.row(j);
 
-					if (abs(A.get(i, j)) == abs(pivot)) {
-						if (A.get(i, j) == pivot) 
+					if (abs(A(i, j)) == abs(pivot)) {
+						if (A(i, j) == pivot) 
 						{
 							temp = temp * -1.0;
 							temp2 = temp2 * -1.0;
 							goto skip;
 						}
-						if ((A.get(i, j) == (-1 * pivot)) || ((-1 * A.get(i, j)) == pivot)) 
+						if ((A(i, j) == (-1 * pivot)) || ((-1 * A(i, j)) == pivot)) 
 							goto skip;
 					}
-					if (abs(A.get(i, j)) != abs(pivot)) {
-						real a = -A.get(i, j) / pivot;
+					if (abs(A(i, j)) != abs(pivot)) {
+						real a = -A(i, j) / pivot;
 						temp = temp * a;
 						temp2 = temp2 * a;
 					}
@@ -255,22 +266,22 @@ namespace MathParser
 		//go the other way to remove the upper triangle of non-diagonal values
 		for (int j = columns - 1; j >= 0; --j) 
 		{
-			real pivot = A.get(j, j);
+			real pivot = A(j, j);
 			for (int i = rows - 1; i >= 0; --i) {
-				if (i != j && A.get(i, j) != 0) {
+				if (i != j && A(i, j) != 0) {
 					Vector temp = A.row(j);
 					Vector temp2 = Aug.row(j);
 
-					if (abs(A.get(i, j)) == abs(pivot)) {
-						if (A.get(i, j) == pivot) {
+					if (abs(A(i, j)) == abs(pivot)) {
+						if (A(i, j) == pivot) {
 							temp = temp * -1.0;
 							temp2 = temp2 * -1.0;
 							goto skip2;
 						}
-						if ((A.get(i, j) == (-1 * pivot)) || ((-1 * A.get(i, j)) == pivot)) { goto skip2; }
+						if ((A(i, j) == (-1 * pivot)) || ((-1 * A(i, j)) == pivot)) { goto skip2; }
 					}
-					if (abs(A.get(i, j)) != abs(pivot)) {
-						real a = -A.get(i, j) / pivot;
+					if (abs(A(i, j)) != abs(pivot)) {
+						real a = -A(i, j) / pivot;
 						temp = temp * a;
 						temp2 = temp2 * a;
 					}
@@ -283,8 +294,8 @@ namespace MathParser
 		}
 
 		for (int i = 0; i < rows; ++i) {//make diagonals into all 1's
-			if (A.get(i, i) != 0 && A.get(i, i) != 1) {
-				real a = ((real)1 / (A.get(i, i)));
+			if (A(i, i) != 0 && A(i, i) != 1) {
+				real a = ((real)1 / (A(i, i)));
 				A.multiplyRow(i, a);
 				Aug.multiplyRow(i, a);
 			}
@@ -292,12 +303,16 @@ namespace MathParser
 		return Matrix(rows, columns, Aug.element);
 	}
 
-	Matrix Matrix::HadamardProduct(Matrix A, Matrix B) {//multiplys two matrices by index so that C(i,j) = A(i,j)*B(i,j)
-		if (A.rows != B.rows || A.columns != B.columns) { return Matrix(); }
+	Matrix Matrix::HadamardProduct(Matrix A, Matrix B) 
+	{// Multiplies elements of two matrices by index so that C(i,j) = A(i,j)*B(i,j)
+		if (A.rows != B.rows || A.columns != B.columns) 
+			return Matrix();
 		Vector elm(A.size());
-		for (int i = 0; i < A.rows; ++i) {
-			for (int j = 0; j < A.columns; ++j) {
-				elm[i * A.columns + j] = A.get(i, j) * B.get(i, j);
+		for (int i = 0; i < A.rows; ++i) 
+		{
+			for (int j = 0; j < A.columns; ++j) 
+			{
+				elm[i * A.columns + j] = A(i, j) * B(i, j);
 			}
 		}
 		return Matrix(A.rows, A.columns, elm);
@@ -312,7 +327,7 @@ namespace MathParser
 		x.resize(columns,0);
 		for (int k = 0; k < columns; ++k)
 		{
-			x[k] = get(rw, k);
+			x[k] = element[rw * columns + k];
 		}
 		return x;
 	}
@@ -325,7 +340,7 @@ namespace MathParser
 		Vector x;
 		x.resize(rows,0);
 		for (int k = 0; k < rows; ++k) {
-			x[k] = get(k, cl);
+			x[k] = element[k * columns + cl];
 		}
 		return x;
 	}
@@ -333,8 +348,8 @@ namespace MathParser
 	void Matrix::setRowNonZeroValues(int rw, real x) 
 	{
 		for (int k = 0; k < columns; ++k) {
-			if (abs(get(rw, k)) > 0) {
-				set(rw, k, x);
+			if (std::abs(element[rw * columns + k]) > 0) {
+				element[rw * columns + k] = x;
 			}
 		}
 	}
@@ -342,20 +357,23 @@ namespace MathParser
 	void Matrix::setRow(int rw, Vector n) 
 	{
 		for (int k = 0; k < columns; ++k) 
-			set(rw, k, n[k]);
+			element[rw * columns + k] = n[k];
 	}
 
 	void Matrix::setColumnNonZeroValues(int col, real x) 
 	{
-		for (int k = 0; k < rows; ++k) {
-			if (abs(get(k, col)) > 0) {
-				set(k, col, x);
-			}
+		for (int k = 0; k < rows; ++k) 
+		{
+			if (std::abs(element[k * columns + col]) > 0) 			
+				element[k * columns + col] = x;			
 		}
 	}
 
 	void Matrix::setColumn(int col, Vector n) {
-		for (int k = 0; k < rows; ++k) { set(k, col, n[k]); }
+		for (int k = 0; k < rows; ++k) 
+		{ 
+			element[k * columns + col] = n[k];
+		}
 	}
 
 	void Matrix::multiplyRow(int rw, real n) {
@@ -406,8 +424,16 @@ namespace MathParser
 		bool isRow = false;
 		for (int i = 0; i < rows; ++i) {
 			for (int j = 0; j < columns; ++j) {
-				if (x[j] != get(i, j)) { isRow = false; j = columns; }
-				if (j = columns - 1) { isRow = true; index = i; }
+				if (x[j] != element[i * columns + j]) 
+				{ 
+					isRow = false; 
+					j = columns; 
+				}
+				if (j = columns - 1) 
+				{ 
+					isRow = true; 
+					index = i; 
+				}
 			}
 		}
 		return row(index);
@@ -419,12 +445,25 @@ namespace MathParser
 		bool isColumn = false;
 		for (int j = 0; j < columns; ++j) {
 			for (int i = 0; i < rows; ++i) {
-				if (x[j] != get(i, j)) { isColumn = false; i = rows; }
-				if (i = rows - 1) { isColumn = true; index = j; }
+				if (x[j] != element[i * columns + j]) 
+				{ 
+					isColumn = false; 
+					i = rows; 
+				}
+				if (i = rows - 1) 
+				{ 
+					isColumn = true; 
+					index = j; 
+				}
 			}
 		}
-		if (index > -1) { return column(index); }
-		else { Vector n; return n; }
+		if (index > -1) 
+			return column(index);
+		else 
+		{ 
+			Vector n; 
+			return n; 
+		}
 	}
 
 	void Matrix::reverseRow(int n) 
@@ -432,7 +471,7 @@ namespace MathParser
 		Vector vec = row(n);
 		std::reverse(vec.begin(), vec.end());
 		for (int j = 0; j < columns; ++j) {
-			set(n, j, vec[j]);
+			element[n * columns + j] = vec[j];
 		}
 	}
 
@@ -441,7 +480,7 @@ namespace MathParser
 		Vector vec = column(n);
 		std::reverse(vec.begin(), vec.end());
 		for (int j = 0; j < rows; ++j) {
-			set(j, n, vec[j]);
+			element[j * columns + n] = vec[j];
 		}
 	}
 
@@ -526,26 +565,32 @@ namespace MathParser
 		}
 	}
 
-	Matrix Matrix::expandToUpperLeft(int r, int c) {//takes original matrix and creates a new matrix with the original in the lower right corner.
+	Matrix Matrix::expandToUpperLeft(int r, int c) 
+	{//takes original matrix and creates a new matrix with the original 
+	 //in the lower right corner.
 		Matrix newEl(r, c);
 		if (r > rows && c > columns) {
 			newEl.identity();
 			for (int i = r - rows; i < r; ++i) {
 				for (int j = c - columns; j < c; ++j) {
-					newEl.set(i, j, get((i - (r - rows)), (j - (c - columns))));
+					int idx_i = (i - (r - rows));
+					int idx_j = (j - (c - columns));
+					newEl(i, j) = element[idx_i * columns + idx_j];
 				}
 			}
 		}
 		return Matrix(r, c, newEl.element);
 	}
 
-	Matrix Matrix::expandToLowerRight(int r, int c) {//takes original matrix and creates a new matrix with the original in the upper left corner.
+	Matrix Matrix::expandToLowerRight(int r, int c) 
+	{//takes original matrix and creates a new matrix with the original 
+	 //in the upper left corner.
 		Matrix newEl(r, c);
 		if (r > rows && c > columns) {
 			newEl.identity();
 			for (int i = 0; i < rows; ++i) {
 				for (int j = 0; j < columns; ++j) {
-					newEl.set(i, j, get(i, j));
+					newEl(i, j) = element[i * columns + j];
 				}
 			}
 		}
@@ -556,7 +601,7 @@ namespace MathParser
 		Matrix newEl(rows + r, columns);
 		for (int i = 0; i < rows; ++i) {
 			for (int j = 0; j < columns; ++j) {
-				newEl.set(i, j, get(i, j));
+				newEl(i, j) = element[i * columns + j];
 			}
 		}
 		return Matrix(rows + r, columns, newEl.element);
@@ -566,7 +611,7 @@ namespace MathParser
 		Matrix newEl(rows, columns + c);
 		for (int i = 0; i < rows; ++i) {
 			for (int j = 0; j < columns; ++j) {
-				newEl.set(i, j, get(i, j));
+				newEl(i, j) = element[i * columns + j];
 			}
 		}
 		return Matrix(rows, columns + c, newEl.element);
@@ -579,8 +624,10 @@ namespace MathParser
 		Matrix C(r, c);
 		for (int i = 0; i < r; ++i) {
 			for (int j = 0; j < c; ++j) {
-				if (j < A.columns && i < A.rows) { C.set(i, j, A.get(i, j)); }
-				if (j >= A.columns && i < B.rows) { C.set(i, j, B.get(i, j - A.columns)); }
+				if (j < A.columns && i < A.rows) 
+					C(i, j) = A(i, j);
+				if (j >= A.columns && i < B.rows) 
+					C(i, j) = B(i, j - A.columns);
 			}
 		}
 
@@ -607,7 +654,8 @@ namespace MathParser
 						jj = j + (kCenterX - n);
 
 						// ignore input samples which are out of bound
-						if (ii >= 0 && ii < B.rows && jj >= 0 && jj < B.columns) { vals[i * B.columns + j] += B.get(ii, jj) * A.get(m, n); }
+						if (ii >= 0 && ii < B.rows && jj >= 0 && jj < B.columns) 
+							vals[i * B.columns + j] += B(ii, jj) * A(m, n);
 					}
 				}
 			}
@@ -637,7 +685,8 @@ namespace MathParser
 						jj = j + (kCenterX - nn);
 
 						// ignore input samples which are out of bound
-						if (ii >= 0 && ii < B.rows && jj >= 0 && jj < B.columns) { vals[i * B.columns + j] += B.get(ii, jj) * A.get(mm, nn); }
+						if (ii >= 0 && ii < B.rows && jj >= 0 && jj < B.columns) 
+							vals[i * B.columns + j] += B(ii, jj) * A(mm, nn);
 					}
 				}
 			}
@@ -647,8 +696,10 @@ namespace MathParser
 
 	bool Matrix::isIntegerMatrix() {
 		for (int i = 0; i < rows; ++i) {
-			for (int j = 0; j < columns; ++j) {
-				if (floor(abs(get(i, j))) != abs(get(i, j)))
+			for (int j = 0; j < columns; ++j) 
+			{
+				real val = element[i * columns + j];
+				if (std::floor(std::abs(val)) !=  std::abs(val))
 					return false;
 			}
 		}
@@ -665,7 +716,8 @@ namespace MathParser
 	bool Matrix::isBoolean() {
 		for (int i = 0; i < rows; ++i) {
 			for (int j = 0; j < columns; ++j) {
-				if (get(i, j) != 0 && get(i, j) != 1) 
+				real val = element[i * columns + j];
+				if (val && val != 1) 
 					return false;
 			}
 		}
@@ -676,7 +728,7 @@ namespace MathParser
 		for (int i = 0; i < rows; ++i) {
 			for (int j = 0; j < columns; ++j) {
 				if (i != j) {
-					if (abs(get(i, j)) > 0) 
+					if (std::abs(element[i * columns + j]) > 0)
 						return false;
 				}
 			}
@@ -691,15 +743,18 @@ namespace MathParser
 			if (columnNorm(i) != 1)
 				return false;
 		}
-		if (det() == 0) 
+		if (!det()) 
 			return false;		
 		return true;
 	}
 
 	bool Matrix::isLinearlyIndependent() {
-		if (rows < columns) { return true; }
-		if (det() == 0) { return false; }
-		if (GramMatrix().det() == 0) { return false; }
+		if (rows < columns) 
+			return true;
+		if (!det()) 
+			return false;
+		if (!GramMatrix().det()) 
+			return false;
 		return true;
 	}
 
@@ -719,7 +774,7 @@ namespace MathParser
 		{
 			for (int j = 0; j < rows; ++j) 
 			{
-				element[i*rows + j] = get(j, i);
+				element[i*rows + j] = element[j * columns + i];
 			}
 		}
 		return Matrix();
@@ -732,7 +787,7 @@ namespace MathParser
 			for (int j = 0; j < columns; ++j) {
 				Vector X1 = column(i) - columnMean(i);
 				Vector X2 = column(j) - columnMean(j);
-				M.set(i, j, dot(X1, X2) / (rows));
+				M(i, j) = dot(X1, X2) / (rows);
 			}
 		}
 		return M;
@@ -745,40 +800,49 @@ namespace MathParser
 			for (int j = 0; j < columns; ++j) {
 				Vector X1 = column(i) - columnMean(i);
 				Vector X2 = column(j) - columnMean(j);
-				M.set(i, j, dot(X1, X2) / ((rows)-1));
+				M(i, j) = dot(X1, X2) / ((rows)-1);
 			}
 		}
 		return M;
 	}
 
 
-	Matrix Matrix::transpose() {
+	Matrix Matrix::transpose() 
+	{
 		int n = rows;
 		int m = columns;
 		Vector p(n * m);
 		for (int i = 0; i < m; ++i) {
 			for (int j = 0; j < n; ++j) {
-				p[i * rows + j] = get(j, i);
+				p[i * rows + j] = element[j * columns + i];
 			}
 		}
 		return Matrix(m, n, p);
 	}
 
-	Matrix Matrix::GramMatrix() {//turn row vector or nxn matrix into its Gram matrix
+	Matrix Matrix::GramMatrix() 
+	{//turn row vector or nxn matrix into its Gram matrix
 		Matrix T = transpose();
-		if (columns == 1) { return multiply(*this, T); }
-		else { return multiply(T, *this); }
+		if (columns == 1) 
+			return *this * T;
+		else 
+			return T * *this;
 	}
 
-	Matrix Matrix::GramMatrix(Matrix M) {//turn 2 vectors into a Gram matrix
+	Matrix Matrix::GramMatrix(Matrix M) 
+	{//turn 2 vectors into a Gram matrix
 		Matrix Trans = M.transpose();
-		if (M.columns == 1) { return multiply(M, Trans); }
-		else { return multiply(Trans, M); }
+		if (M.columns == 1) 
+			return M * Trans;
+		else 
+			return Trans * M;
 	}
 
-	Matrix Matrix::Vandermonde() {//create Vandermonde matrix from vector
+	Matrix Matrix::Vandermonde() 
+	{//create Vandermonde matrix from vector
 		int p = columns;
-		if (columns == 1) { p = rows; }
+		if (columns == 1) 
+			p = rows;
 		Vector temp;
 		temp.resize(p * p,0);
 		for (int i = 0; i < p; ++i) {
@@ -794,7 +858,7 @@ namespace MathParser
 		real answer = 0;
 		for (int i = 0; i < rows; ++i) {
 			for (int j = 0; j < columns; ++j) {
-				answer += get(i, j);
+				answer += element[i * columns + j];
 			}
 		}
 		return answer / size();
@@ -824,7 +888,7 @@ namespace MathParser
 		real answer = 1;
 		for (int i = 0; i < rows; ++i) {
 			for (int j = 0; j < columns; ++j) {
-				answer *= get(i, j);
+				answer *= element[i * columns + j];
 			}
 		}
 		return pow(answer, real(1.0 / size()));
@@ -834,7 +898,7 @@ namespace MathParser
 	{
 		real answer = 0;
 		for (int i = 0; i < rows; ++i) {
-			answer += get(i, i);
+			answer += element[i * columns + i];
 		}
 		return answer;
 	}
@@ -870,7 +934,7 @@ namespace MathParser
 		real answer = 0;
 		for (int i = 0; i < rows; ++i) {
 			for (int j = 0; j < columns; ++j) {
-				answer += pow(get(i, j), 2);
+				answer += pow(element[i * columns + j], 2);
 			}
 		}
 		return sqrt(answer);
@@ -896,14 +960,14 @@ namespace MathParser
 	  //the matrix multiplied by its conjugate transpose.
 		Matrix AT = *this;
 		AT.transpose();
-		return sqrt(multiply(*this, AT).trace());
+		return std::sqrt((*this * AT).trace());
 	}
 
 	real Matrix::pNorm(real p) {
 		real answer = 0;
 		for (int i = 0; i < rows; ++i) {
 			for (int j = 0; j < columns; ++j) {
-				answer += pow(get(i, j), p);
+				answer += pow(element[i * columns + j], p);
 			}
 		}
 		return sqrt(answer);
@@ -912,7 +976,7 @@ namespace MathParser
 	real Matrix::sumRow(int r) {
 		real answer = 0;
 		for (int i = 0; i < columns; ++i) {
-			answer += get(r, i);
+			answer += element[r * columns + i];
 		}
 		return answer;
 	}
@@ -920,7 +984,7 @@ namespace MathParser
 	real Matrix::sumColumn(int r) {
 		real answer = 0;
 		for (int i = 0; i < rows; ++i) {
-			answer += get(i, r);
+			answer += element[i * columns + r];
 		}
 		return answer;
 	}
@@ -929,7 +993,7 @@ namespace MathParser
 		real answer = 0;
 		for (int i = 0; i < rows; ++i) {
 			for (int j = 0; j < columns; j++) {
-				answer += get(i, j);
+				answer += element[i * columns + j];
 			}
 		}
 		return answer;
@@ -938,7 +1002,7 @@ namespace MathParser
 	real Matrix::columnMean(int c) {
 		real answer = 0;
 		for (int i = 0; i < rows; ++i) {
-			answer += get(i, c);
+			answer += element[i * columns + c];
 		}
 		return (answer / rows);
 	}
@@ -946,7 +1010,7 @@ namespace MathParser
 	real Matrix::rowMean(int r) {
 		real answer = 0;
 		for (int i = 0; i < columns; ++i) {
-			answer += get(r, i);
+			answer += element[r * columns + i];
 		}
 		return (answer / columns);
 	}
@@ -954,7 +1018,7 @@ namespace MathParser
 	real Matrix::rowNorm(int r) {
 		real answer = 0;
 		for (int i = 0; i < columns; ++i) {
-			answer += pow(get(r, i), 2);
+			answer += pow(element[r * columns + i], 2);
 		}
 		return sqrt(answer);
 	}
@@ -962,7 +1026,7 @@ namespace MathParser
 	real Matrix::columnNorm(int c) {
 		real answer = 0;
 		for (int i = 0; i < rows; ++i) {
-			answer += pow(get(i, c), 2);
+			answer += pow(element[i * columns + c], 2);
 		}
 		return sqrt(answer);
 	}
@@ -971,7 +1035,7 @@ namespace MathParser
 		real colMean = columnMean(c);
 		real answer = 0;
 		for (int i = 0; i < rows; ++i) {
-			answer += pow(get(i, c) - colMean, 2);
+			answer += pow(element[i * columns + c] - colMean, 2);
 		}
 		return answer;
 	}
@@ -980,7 +1044,7 @@ namespace MathParser
 		real rMean = rowMean(r);
 		real answer = 0;
 		for (int i = 0; i < rows; ++i) {
-			answer += pow(get(r, i) - rMean, 2);
+			answer += pow(element[r * columns + i] - rMean, 2);
 		}
 		return answer;
 	}
@@ -989,12 +1053,13 @@ namespace MathParser
 		real colMean = columnMean(c);
 		real answer = 0;
 		for (int i = 0; i < rows; ++i) {
-			answer += pow(get(i, c) - colMean, 2);
+			answer += pow(element[i * columns + c] - colMean, 2);
 		}
 		return answer / (rows - 1);
 	}
 
-	real Matrix::columnCovariance(int c1, int c2) {
+	real Matrix::columnCovariance(int c1, int c2) 
+	{
 		int n = rows;
 		real answer = 0;
 		Vector x = column(c1);
@@ -1007,16 +1072,18 @@ namespace MathParser
 		return answer / (n * n);
 	}
 
-	real Matrix::columnDeviation(int c) {
+	real Matrix::columnDeviation(int c) 
+	{
 		real colMean = columnMean(c);
 		real answer = 0;
 		for (int i = 0; i < rows; ++i) {
-			answer += pow(get(i, c) - colMean, 2);
+			answer += pow(element[i * columns + c] - colMean, 2);
 		}
 		return sqrt(answer / (rows - 1));
 	}
 
-	real Matrix::rowCovariance(int r1, int r2) {
+	real Matrix::rowCovariance(int r1, int r2) 
+	{
 		int n = columns;
 		real answer = 0;
 		Vector x = row(r1);
@@ -1033,7 +1100,7 @@ namespace MathParser
 		real rMean = rowMean(r);
 		real answer = 0;
 		for (int i = 0; i < rows; ++i) {
-			answer += pow(get(r, i) - rMean, 2);
+			answer += pow(element[r * columns + i] - rMean, 2);
 		}
 		return answer / (columns - 1);
 	}
@@ -1042,7 +1109,7 @@ namespace MathParser
 		real rMean = rowMean(r);
 		real answer = 0;
 		for (int i = 0; i < rows; ++i) {
-			answer += pow(get(r, i) - rMean, 2);
+			answer += pow(element[r * columns + i] - rMean, 2);
 		}
 		return sqrt(answer / (columns - 1));
 	}
@@ -1092,7 +1159,7 @@ namespace MathParser
 		real Mean = mean();
 		for (int i = 0; i < rows; ++i) {
 			for (int j = 0; j < columns; ++j) {
-				answer += pow(get(i, j) - Mean, 2);
+				answer += pow(element[i * columns + j] - Mean, 2);
 			}
 		}
 		return sqrt(answer / ((rows * columns) - 1));
@@ -1103,7 +1170,7 @@ namespace MathParser
 		real Mean = mean();
 		for (int i = 0; i < rows; ++i) {
 			for (int j = 0; j < columns; ++j) {
-				answer += pow(get(i, j) - Mean, 2);
+				answer += pow(element[i * columns + j] - Mean, 2);
 			}
 		}
 		return sqrt(answer / (rows * columns));
@@ -1117,7 +1184,7 @@ namespace MathParser
 		for (int i = 0; i < rows; ++i) {
 			for (int j = 0; j < columns; ++j) {
 				real Ei = (sumRow(i) * sumColumn(j) / sm);
-				answer += pow(get(i, j) - Ei, 2) / Ei;
+				answer += pow(element[i * columns + j] - Ei, 2) / Ei;
 			}
 		}
 		return answer;
@@ -1131,7 +1198,11 @@ namespace MathParser
 		int counter = 0;
 		for (int i = 0; i < rows; ++i) {
 			for (int j = 0; j < columns; ++j) {
-				if (i != n) { newElements[counter] = get(i, j); ++counter; }
+				if (i != n) 
+				{ 
+					newElements[counter] = element[i * columns + j]; 
+					++counter; 
+				}
 			}
 		}
 		element = newElements;
@@ -1144,7 +1215,11 @@ namespace MathParser
 		int counter = 0;
 		for (int i = 0; i < rows; ++i) {
 			for (int j = 0; j < columns; ++j) {
-				if (j != n) { newElements[counter] = get(i, j); ++counter; }
+				if (j != n) 
+				{ 
+					newElements[counter] = element[i * columns + j]; 
+					++counter; 
+				}
 			}
 		}
 		element = newElements;
@@ -1179,14 +1254,17 @@ namespace MathParser
 		T.identity();
 		for (int i = 0; i < T.rows; ++i) {
 			for (int j = 0; j < T.columns; ++j) {
-				if (i < A.rows && j < A.columns) { T.set(i, j, A.get(i, j)); }
-				if (i >= A.rows && j >= A.columns) { T.set(i, j, B.get(i - A.rows, j - A.columns)); }
+				if (i < A.rows && j < A.columns) 
+					T(i, j) = A(i, j); 
+				if (i >= A.rows && j >= A.columns) 
+					T(i, j) = B(i - A.rows, j - A.columns);
 			}
 		}
 		return T;
 	}
 
-	Matrix Matrix::tensorProduct(Matrix A, Matrix B) {
+	Matrix Matrix::tensorProduct(Matrix A, Matrix B) 
+	{
 		Matrix T(A.rows * B.rows, A.columns * B.columns);
 		T.identity();
 		int Rbound = (A.rows - 1);
@@ -1194,12 +1272,15 @@ namespace MathParser
 		int Rcounter = 0;
 		int Ccounter = 0;
 		for (int i = 0; i < T.rows; ++i) {
-			for (int j = 0; j < T.columns; ++j) {
-				T.set(i, j, A.get(Rcounter, Ccounter) * B.get(i % B.rows, j % B.columns));
-				if (j % A.columns == Cbound && j != 0) { ++Ccounter; }
+			for (int j = 0; j < T.columns; ++j) 
+			{
+				T(i, j) = A(Rcounter, Ccounter) * B(i % B.rows, j % B.columns);
+				if (j % A.columns == Cbound && j) 
+					++Ccounter;
 			}
 			Ccounter = 0;
-			if (i % A.rows == Rbound && i != 0) { ++Rcounter; }
+			if (i % A.rows == Rbound && i) 
+				++Rcounter;
 		}
 		return T;
 	}
@@ -1211,14 +1292,18 @@ namespace MathParser
 		return true;
 	}
 
-	Matrix Matrix::swapOutZeroDiagonals() {
+	Matrix Matrix::swapOutZeroDiagonals() 
+	{
 		Matrix M(rows, columns, element);
-		while (M.zeroInDiag() == true) {
+		while (M.zeroInDiag()) {
 			for (int i = 0; i < rows; ++i) {
-				if (M.get(i, i) == 0) {
+				if (!M(i, i)) 
+				{
 					for (int j = 0; j < columns; ++j) {
-						if (M.get(i, j) != 0 && M.get(j, i) != 0 && i != j) { //carefully choose rows to swap to create M non-zero diagonal
-							M.swapRows(i, j); j = columns;
+						if (M(i, j) && M(j, i) && i != j) 
+						{   // Choose rows to swap to create M non-zero diagonal
+							M.swapRows(i, j); 
+							j = columns;
 						}
 					}
 				}
@@ -1228,80 +1313,84 @@ namespace MathParser
 	}
 
 	real Matrix::columnAbsMax(int n) {
-		real m = get(0, n);
-		if (rows <= 1) { return m; }
+		real m = element[n];
+		if (rows <= 1)
+			return m;
 		for (int i = 0; i < rows; ++i) {
-			real temp = (get(i, n));
+			real temp = element[i * columns + n];
 			if (abs(temp) > m) { m = temp; }
 		}
 		return m;
 	}
 
 	real Matrix::columnMax(int n) {
-		real m = get(0, n);
-		if (rows <= 1) { return m; }
+		real m = element[n];
+		if (rows <= 1)
+			return m;
 		for (int i = 0; i < rows; ++i) {
-			real temp = get(i, n);
+			real temp = element[i * columns + n];
 			if (temp > m) { m = temp; }
 		}
 		return m;
 	}
 
 	real Matrix::columnAbsMin(int n) {
-		real m = get(0, n);
-		if (rows <= 1) { return m; }
+		real m = element[n];
+		if (rows <= 1) 
+			return m;
 		for (int i = 1; i < rows; ++i) {
-			real temp = (get(i, n));
+			real temp = element[i * columns + n];
 			if (abs(temp) < m) { m = temp; }
 		}
 		return m;
 	}
 
 	real Matrix::columnMin(int n) {
-		real m = get(0, n);
+		real m = element[n];
 		if (rows <= 1) { return m; }
 		for (int i = 1; i < rows; ++i) {
-			real temp = get(i, n);
+			real temp = element[i * columns + n];
 			if (temp < m) { m = temp; }
 		}
 		return m;
 	}
 
 	real Matrix::rowAbsMax(int n) {
-		real m = get(n, 0);
-		if (columns <= 1) { return m; }
+		real m = element[n * columns];
+		if (columns <= 1) 
+			return m;
 		for (int i = 0; i < columns; ++i) {
-			real temp = (get(n, i));
+			real temp = element[n * columns + i];
 			if (abs(temp) > m) { m = temp; }
 		}
 		return m;
 	}
 
 	real Matrix::rowMax(int n) {
-		real m = get(n, 0);
+		real m = element[n * columns];
 		if (columns <= 1) { return m; }
 		for (int i = 0; i < columns; ++i) {
-			real temp = get(n, i);
+			real temp = element[n * columns + i];
 			if (temp > m) { m = temp; }
 		}
 		return m;
 	}
 
 	real Matrix::rowAbsMin(int n) {
-		real m = get(n, 0);
+		real m = element[n * columns];
 		if (columns <= 1) { return m; }
 		for (int i = 0; i < columns; ++i) {
-			real temp = (get(n, i));
+			real temp = element[n * columns + i];
 			if (abs(temp) < m) { m = temp; }
 		}
 		return m;
 	}
 
 	real Matrix::rowMin(int n) {
-		real m = get(n, 0);
+		real m = element[n * columns];
 		if (columns <= 1) { return m; }
 		for (int i = 0; i < columns; ++i) {
-			real temp = get(n, i);
+			real temp = element[n * columns + i];
 			if (temp < m) { m = temp; }
 		}
 		return m;
@@ -1310,7 +1399,7 @@ namespace MathParser
 	int Matrix::rowNonzeroValues(int rw) {
 		int n = 0;
 		for (int i = 0; i < columns; ++i) {
-			if (abs(get(rw, i)) > 0) {
+			if (std::abs(element[rw * columns + i]) > 0) {
 				++n;
 			}
 		}
@@ -1320,7 +1409,7 @@ namespace MathParser
 	int Matrix::columnNonzeroValues(int cl) {
 		int n = 0;
 		for (int i = 0; i < rows; ++i) {
-			if (abs(get(i, cl)) > 0) {
+			if (std::abs(element[i * columns + cl]) > 0) {
 				++n;
 			}
 		}
@@ -1330,7 +1419,7 @@ namespace MathParser
 	int Matrix::getPivot(int rw) {
 		int val = 0;
 		while (val < columns) {
-			if (abs(get(rw, val)) > 0) {
+			if (abs(element[rw * columns + val]) > 0) {
 				return val;
 			}
 			++val;
@@ -1341,7 +1430,7 @@ namespace MathParser
 	int Matrix::getReversePivot(int rw) {
 		int val = columns - 1;
 		while (val >= 0) {
-			if (abs(get(rw, val)) > 0) {
+			if (abs(element[rw * columns + val]) > 0) {
 				return val;
 			}
 			--val;
@@ -1362,26 +1451,26 @@ namespace MathParser
 				m = m.swapOutZeroDiagonals(); 
 			int ind = m.getPivot(i);
 			if (ind >= 0) {
-				piv = m.get(i, ind);
+				piv = m(i, ind);
 				//normalize pivot row so pivot = 1
 				if (piv != 1 && piv != 0 && abs(piv) > 0) 
 				{
 					for (int l = i; l < rows; ++l) 
 					{
-						m.set(i, l, m.get(i, l) / piv);
+						m(i, l) = m(i, l) / piv;
 					}
-					m.set(i, i, 1);
+					m(i, i) = 1;
 				}
 				//proceed down the column to make each non-pivot value = 0
 				for (j = 0; j < rows; j++) 
 				{
-					if (m.get(j, i) != 0) {
+					if (m(j, i)) {
 						if (j != i) {
-							piv = m.get(j, i);
+							piv = m(j, i);
 							for (k = i + 1; k < columns; k++) {
-								m.set(j, k, m.get(j, k) - (m.get(i, k) * piv));
+								m(j, k) = m(j, k) - (m(i, k) * piv);
 							}
-							m.set(j, i, 0);
+							m(j, i) = 0;
 						}
 					}
 				}
@@ -1396,26 +1485,27 @@ namespace MathParser
 		Matrix m(rows, columns, element);
 		//Gauss-Jordan elimination
 		for (i = rows - 1; i >= 0; --i) {
-			if (zeroInDiag() && canSwapOutZeroDiagonals()) { m = m.swapOutZeroDiagonals(); }//remove zeroes in diagonal if possible
+			if (zeroInDiag() && canSwapOutZeroDiagonals()) 
+				m = m.swapOutZeroDiagonals();//remove zeroes in diagonal if possible
 			int ind = m.getReversePivot(i);
 			if (ind >= 0) {
-				piv = m.get(i, ind);
+				piv = m(i, ind);
 				//normalize pivot row so pivot = 1
 				if (piv != 1 && piv != 0 && abs(piv) > 0) {
 					for (int l = 0; l < i; ++l) {
-						m.set(i, l, m.get(i, l) / piv);
+						m(i, l) = m(i, l) / piv;
 					}
-					m.set(i, i, 1);
+					m(i, i) = 1;
 				}
 				//proceed up the column to make each non-pivot value = 0
 				for (j = i - 1; j >= 0; --j) {
-					if (m.get(j, i) != 0) {
+					if (m(j, i) != 0) {
 						if (j != i) {
-							piv = m.get(j, i);//m.get(i,i);
+							piv = m(j, i);//m(i,i);
 							for (k = 0; k < i; ++k) {
-								m.set(j, k, m.get(j, k) - (m.get(i, k) * piv));
+								m(j, k) = m(j, k) - (m(i, k) * piv);
 							}
-							m.set(j, i, 0);
+							m(j, i) = 0;
 						}
 					}
 				}
@@ -1434,23 +1524,23 @@ namespace MathParser
 				m = m.swapOutZeroDiagonals(); //remove zeroes in diagonal if possible
 			int ind = m.getPivot(i);
 			if (ind >= 0) {
-				piv = m.get(i, ind);
+				piv = m(i, ind);
 				//normalize pivot row so pivot = 1
 				if (piv != 1 && piv != 0 && abs(piv) > 0) {
 					for (int l = i + 1; l < rows; ++l) {
-						m.set(i, l, m.get(i, l) / piv);
+						m(i, l) = m(i, l) / piv;
 					}
-					m.set(i, i, 1);
+					m(i, i) = 1;
 				}
 				//proceed down the column to make each non-pivot value = 0
 				for (j = i + 1; j < rows; j++) {
-					if (m.get(j, i) != 0) {
+					if (m(j, i) != 0) {
 						if (j != i) {
-							piv = m.get(j, i);//m.get(i,i);
+							piv = m(j, i);//m(i,i);
 							for (k = i + 1; k < columns; k++) {
-								m.set(j, k, m.get(j, k) - (m.get(i, k) * piv));
+								m(j, k) = m(j, k) - (m(i, k) * piv);
 							}
-							m.set(j, i, 0);
+							m(j, i) = 0;
 						}
 					}
 				}
@@ -1478,15 +1568,21 @@ namespace MathParser
 	void Matrix::removeZeroColumns() 
 	{
 		for (int i = 0; i < columns; ++i) {
-			if (sumColumn(i) == 0) { removeColumn(i); --i; }
+			if (!sumColumn(i))
+			{
+				removeColumn(i);
+				--i;
+			}
 		}
 	}
 
 	void Matrix::removeZeroRows() 
 	{
 		for (int i = 0; i < rows; ++i) {
-			if (sumRow(i) == 0) {
-				removeRow(i); --i;
+			if (!sumRow(i)) 
+			{
+				removeRow(i); 
+				--i;
 			}
 		}
 	}
@@ -1495,7 +1591,7 @@ namespace MathParser
 		std::vector<int> piv;
 		for (int i = 0; i < rows; ++i) {
 			for (int j = 0; j < columns; ++j) {
-				real val = get(i, j);
+				real val = element[i * columns + j];
 				if (val != 0) {
 					piv.push_back(j);
 					j = columns + 1;
@@ -1511,9 +1607,11 @@ namespace MathParser
 		int n = rows;
 		Vector x(n);
 		for (int i = n - 1; i >= 0; i--) {
-			x[i] = get(i, n - 1) / get(i, i);
+			x[i] = element[i * columns + n-1] / 
+				element[i * columns + i];
 			for (int k = i - 1; k >= 0; k--) {
-				set(k, n - 1, get(k, n - 1) - get(k, i) * x[i]);
+				element[k * columns + n - 1] -= 
+					element[k * columns + i] * x[i];
 			}
 		}
 		return x;
@@ -1556,15 +1654,15 @@ namespace MathParser
 
 		//elimination with 3 cases:  
 		for (int j = 0; j < columns - 1; ++j) {
-			real pivot = M.get(j + 1, j);
+			real pivot = M(j + 1, j);
 			for (int i = j + 2; i < rows; ++i) {
 				Vector temp = M.row(j + 1);
-				if (M.get(i, j) != 0) {
-					if (abs(M.get(i, j)) == abs(pivot)) {
-						if (M.get(i, j) == pivot) { temp*=-1; goto skipUH; }
-						if ((M.get(i, j) == (-1 * pivot)) || ((-1 * M.get(i, j)) == pivot)) { goto skipUH; }
+				if (M(i, j) != 0) {
+					if (abs(M(i, j)) == abs(pivot)) {
+						if (M(i, j) == pivot) { temp*=-1; goto skipUH; }
+						if ((M(i, j) == (-1 * pivot)) || ((-1 * M(i, j)) == pivot)) { goto skipUH; }
 					}
-					if (abs(M.get(i, j)) != abs(pivot)) { temp*=(-M.get(i, j) / pivot); }
+					if (abs(M(i, j)) != abs(pivot)) { temp*=(-M(i, j) / pivot); }
 
 				skipUH:
 					M.addToRow(i, temp);
@@ -1582,23 +1680,23 @@ namespace MathParser
 
 		for (int j = columns - 1; j >= 0; --j) 
 		{// Go the other way to remove the upper triangle of non-diagonal values.
-			real pivot = A.get(j, j);
+			real pivot = A(j, j);
 			for (int i = j - 1; i >= 0; --i) {
-				if (i != j && A.get(i, j) != 0) {
+				if (i != j && A(i, j) != 0) {
 					Vector temp = A.row(j);
 
-					if (abs(A.get(i, j)) == abs(pivot)) {
-						if (A.get(i, j) == pivot) {
+					if (abs(A(i, j)) == abs(pivot)) {
+						if (A(i, j) == pivot) {
 							temp*= -1;
 							goto skipLH;
 						}
-						if ((A.get(i, j) == (-1 * pivot)) || ((-1 * A.get(i, j)) == pivot)) 
+						if ((A(i, j) == (-1 * pivot)) || ((-1 * A(i, j)) == pivot)) 
 						{ 
 							goto skipLH; 
 						}
 					}
-					if (abs(A.get(i, j)) != abs(pivot)) {
-						real a = -A.get(i, j) / pivot;
+					if (abs(A(i, j)) != abs(pivot)) {
+						real a = -A(i, j) / pivot;
 						temp*= a;
 					}
 
@@ -1656,7 +1754,7 @@ namespace MathParser
 	bool Matrix::zeroInDiag() 
 	{//Test if there are any 0's in the diagonal of a matrix.
 		for (int i = 0; i < rows; ++i)
-			if (!get(i, i))
+			if (!element[i * columns + i])
 				return true;		
 		return false;
 	}
@@ -1667,12 +1765,11 @@ namespace MathParser
 		if (rows != columns) 
 			return 0;
 		if (rows == 1) 
-			return get(0, 0);		
+			return element[0];
 
 		//MATRICES OF 2nd ORDER
-		if (rows == 2) {
-			return (get(0, 0) * get(1, 1) - get(0, 1) * get(1, 0));
-		}
+		if (rows == 2)
+			return (element[0] * element[columns + 1] - element[1] * element[columns]);		
 
 		//NTH ORDER -- use elimination
 		Matrix M(rows, columns, element);
@@ -1680,9 +1777,9 @@ namespace MathParser
 		int signFlip = 0;
 		while (M.zeroInDiag() == true) {
 			for (int i = 0; i < rows; ++i) {
-				if (M.get(i, i) == 0) {
+				if (M(i, i) == 0) {
 					for (int j = 0; j < columns; ++j) {
-						if (M.get(i, j) != 0 && M.get(j, i) != 0 && i != j) 
+						if (M(i, j) != 0 && M(j, i) != 0 && i != j) 
 						{ //Choose rows to swap to create M non-zero diagonal
 							M.swapRows(i, j); j = columns;
 							++signFlip;	// Row swaps flip the sign of the determinant.
@@ -1695,22 +1792,22 @@ namespace MathParser
 		//elimination with 3 cases:  
 		for (int j = 0; j < columns; ++j) 
 		{
-			real pivot = M.get(j, j);
+			real pivot = M(j, j);
 			for (int i = j + 1; i < rows; ++i) {
 				Vector temp = M.row(j);
-				if (M.get(i, j) != 0) {
-					if (abs(M.get(i, j)) == abs(pivot)) {
-						if (M.get(i, j) == pivot) 
+				if (M(i, j) != 0) {
+					if (abs(M(i, j)) == abs(pivot)) {
+						if (M(i, j) == pivot) 
 						{ 
 							temp*= -1; 
 							goto skip; 
 						}
-						if ((M.get(i, j) == (-1 * pivot)) || ((-1 * M.get(i, j)) == pivot)) 
+						if ((M(i, j) == (-1 * pivot)) || ((-1 * M(i, j)) == pivot)) 
 							goto skip;
 					}
-					if (abs(M.get(i, j)) != abs(pivot)) 
+					if (abs(M(i, j)) != abs(pivot)) 
 					{ 
-						temp*= (-M.get(i, j) / pivot); 
+						temp*= (-M(i, j) / pivot); 
 					}
 				skip:
 					M.addToRow(i, temp);
@@ -1720,7 +1817,7 @@ namespace MathParser
 
 		real answer = 1;
 		for (int i = 0; i < columns; ++i) 
-			answer *= M.get(i, i);//multiply diagonals to get determinant		
+			answer *= M(i, i);//multiply diagonals to get determinant		
 		answer *= pow(-1, signFlip % 2);//fix flipped determinant sign.
 		return answer;
 	}
@@ -1731,7 +1828,7 @@ namespace MathParser
 		Matrix m = upperTriangularize();
 		real det = 1;
 		for (int i = 0; i < m.rows; ++i) 
-			det *= m.get(i, i);		
+			det *= m(i, i);		
 		return det;
 	}
 
@@ -1743,11 +1840,11 @@ namespace MathParser
 		{
 			for (int i = 0; i < rows; ++i) 
 			{
-				if (A.get(i, i) == 0) 
+				if (A(i, i) == 0) 
 				{
 					for (int j = 0; j < columns; ++j) 
 					{// Choose rows to swap to create a non-zero diagonal
-						if (A.get(i, j) != 0 && A.get(j, i) != 0 && i != j) 
+						if (A(i, j) != 0 && A(j, i) != 0 && i != j) 
 						{ 
 							A.swapRows(i, j);
 							j = columns;
@@ -1760,25 +1857,25 @@ namespace MathParser
 		// Iterate and eliminate the lower triangle of values
 		for (int j = 0; j < rows; ++j) 
 		{
-			real pivot = A.get(j, j);
+			real pivot = A(j, j);
 			for (int i = 0; i < rows; ++i) 
 			{
-				if (i != j && A.get(i, j) != 0) 
+				if (i != j && A(i, j) != 0) 
 				{
 					Vector temp = A.row(j);
-					if (abs(A.get(i, j)) == abs(pivot)) 
+					if (abs(A(i, j)) == abs(pivot)) 
 					{
-						if (A.get(i, j) == pivot) 
+						if (A(i, j) == pivot) 
 						{
 							temp*= -1;
 							goto skip;
 						}
-						if ((A.get(i, j) == (-1 * pivot)) || ((-1 * A.get(i, j)) == pivot)) 
+						if ((A(i, j) == (-1 * pivot)) || ((-1 * A(i, j)) == pivot)) 
 							goto skip;
 					}
-					if (abs(A.get(i, j)) != abs(pivot)) 
+					if (abs(A(i, j)) != abs(pivot)) 
 					{
-						real a = -A.get(i, j) / pivot;
+						real a = -A(i, j) / pivot;
 						temp*= a;
 					}
 
@@ -1791,8 +1888,8 @@ namespace MathParser
 
 		for (int i = 0; i < rows; ++i) 
 		{//make diagonals into all 1's
-			if (A.get(i, i) != 0 && A.get(i, i) != 1) {
-				real a = ((real)1 / (A.get(i, i)));
+			if (A(i, i) != 0 && A(i, i) != 1) {
+				real a = ((real)1 / (A(i, i)));
 				A.multiplyRow(i, a);
 			}
 		}
@@ -1806,14 +1903,14 @@ namespace MathParser
 		for (int i = 0; i < M.rows; ++i) {
 			for (int j = 0; j < M.columns; ++j) {
 				if (i == rw) {
-					M.set(i, j, vec[j]);
+					M(i, j) = vec[j];
 				}
 				else {
 					if (i < rw) {
-						M.set(i, j, get(i, j));
+						M(i, j) = element[i * columns + j];
 					}
 					if (i > rw) {
-						M.set(i, j, get(i - 1, j));
+						M(i, j) = element[(i - 1) * columns + j];
 					}
 				}
 			}
@@ -1827,15 +1924,13 @@ namespace MathParser
 		for (int i = 0; i < M.rows; ++i) {
 			for (int j = 0; j < M.columns; ++j) {
 				if (i == rw) {
-					M.set(i, j, vec[j]);
+					M(i, j) = vec[j];
 				}
 				else {
-					if (i < rw) {
-						M.set(i, j, get(i, j));
-					}
-					if (i > rw) {
-						M.set(i, j, get(i - 1, j));
-					}
+					if (i < rw)
+						M(i, j) = element[i * columns + j];					
+					if (i > rw) 
+						M(i, j) = element[(i-1) * columns + j];					
 				}
 			}
 		}
@@ -1849,35 +1944,32 @@ namespace MathParser
 		for (int i = 0; i < M.rows; ++i) {
 			for (int j = 0; j < M.columns; ++j) {
 				if (j == cl) {
-					M.set(i, j, vec[i]);
+					M(i, j) = vec[i];
 				}
 				else {
-					if (j < cl) {
-						M.set(i, j, get(i, j));
-					}
-					if (j > cl) {
-						M.set(i, j, get(i, j - 1));
-					}
+					if (j < cl)
+						M(i, j) = element[i * columns + j];					
+					if (j > cl)
+						M(i, j) = element[i * columns + (j-1)];					
 				}
 			}
 		}
 		return M;
 	}
 
-	Matrix Matrix::addColumn(int cl, Vector vec) {
+	Matrix Matrix::addColumn(int cl, Vector vec) 
+	{
 		Matrix M(rows, columns + 1);
 		for (int i = 0; i < M.rows; ++i) {
 			for (int j = 0; j < M.columns; ++j) {
 				if (j == cl) {
-					M.set(i, j, vec[i]);
+					M(i, j) = vec[i];
 				}
 				else {
-					if (j < cl) {
-						M.set(i, j, get(i, j));
-					}
-					if (j > cl) {
-						M.set(i, j, get(i, j - 1));
-					}
+					if (j < cl)
+						M(i, j) = element[i * columns + j];
+					if (j > cl) 
+						M(i, j) = element[i * columns + (j - 1)];
 				}
 			}
 		}
@@ -1905,11 +1997,11 @@ namespace MathParser
 		Matrix MT = M.transpose();
 
 		//search for U
-		Matrix MMT = M.multiply(M, MT);
+		Matrix MMT = M * MT;
 		Mat.push_back(MMT.eigenvectors());
 
 		//search for V
-		Matrix MTM = M.multiply(MT, M);
+		Matrix MTM = MT * M;
 		Mat.push_back(MTM.eigenvectors());
 
 		//search for S
@@ -1933,26 +2025,26 @@ namespace MathParser
 
 		// Set row diagonals to 1.
 		for (i = 0; i < rows; i++)
-			U.set(i, i, 1);
+			U(i, i) = 1;
 
 		for (j = 0; j < columns; j++) {
 			for (i = j; i < rows; i++) {
 				sum = 0;
 				for (k = 0; k < j; k++) {
-					sum = sum + L.get(i, k) * U.get(k, j);
+					sum = sum + L(i, k) * U(k, j);
 				}
-				L.set(i, j, A.get(i, j) - sum);
+				L(i, j) = A(i, j) - sum;
 			}
 
 			for (i = j; i < rows; i++) {
 				sum = 0;
 				for (k = 0; k < j; k++) {
-					sum = sum + L.get(j, k) * U.get(k, i);
+					sum = sum + L(j, k) * U(k, i);
 				}
-				real divisor = L.get(j, j);
+				real divisor = L(j, j);
 				if (!divisor)//prevent division by 0.
 					divisor = std::numeric_limits<real>::min();
-				U.set(j, i, ((A.get(j, i) - sum) / divisor));
+				U(j, i) = (A(j, i) - sum) / divisor;
 			}
 		}
 		answer.push_back(L);
@@ -1970,26 +2062,26 @@ namespace MathParser
 
 		// Set row diagonals to 1.
 		for (i = 0; i < rows; i++)
-			U.set(i, i, 1);
+			U(i, i) = 1;
 
 		for (j = 0; j < columns; j++) {
 			for (i = j; i < rows; i++) {
 				sum = 0;
 				for (k = 0; k < j; k++) {
-					sum = sum + L.get(i, k) * U.get(k, j);
+					sum = sum + L(i, k) * U(k, j);
 				}
-				L.set(i, j, A.get(i, j) - sum);
+				L(i, j) = A(i, j) - sum;
 			}
 
 			for (i = j; i < rows; i++) {
 				sum = 0;
 				for (k = 0; k < j; k++) {
-					sum = sum + L.get(j, k) * U.get(k, i);
+					sum = sum + L(j, k) * U(k, i);
 				}
-				real divisor = L.get(j, j);
+				real divisor = L(j, j);
 				if (!divisor)//prevent division by 0.
 					divisor = std::numeric_limits<real>::min();								
-				U.set(j, i, ((A.get(j, i) - sum) / divisor));
+				U(j, i) = ((A(j, i) - sum) / divisor);
 			}
 		}
 		return L;
@@ -2006,26 +2098,26 @@ namespace MathParser
 
 		// Set row diagonals to 1.
 		for (i = 0; i < rows; i++)
-			U.set(i, i, 1);		
+			U(i, i) = 1;		
 
 		for (j = 0; j < columns; j++) {
 			for (i = j; i < rows; i++) 
 			{
 				sum = 0;
 				for (k = 0; k < j; k++)
-					sum = sum + L.get(i, k) * U.get(k, j);				
-				L.set(i, j, A.get(i, j) - sum);
+					sum = sum + L(i, k) * U(k, j);				
+				L(i, j) = A(i, j) - sum;
 			}
 
 			for (i = j; i < rows; i++) {
 				sum = 0;
 				for (k = 0; k < j; k++) {
-					sum = sum + L.get(j, k) * U.get(k, i);
+					sum = sum + L(j, k) * U(k, i);
 				}
-				real divisor = L.get(j, j);
+				real divisor = L(j, j);
 				if (!divisor)//prevent division by 0.
 					divisor = std::numeric_limits<real>::min();								
-				U.set(j, i, ((A.get(j, i) - sum) / divisor));
+				U(j, i) = (A(j, i) - sum) / divisor;
 			}
 		}
 		return U;
@@ -2059,7 +2151,7 @@ namespace MathParser
 					Vector a = column(j);
 					Vector b = Q.column(i);
 					real temp = dot(a, b);
-					R.set(i, j, temp);
+					R(i, j) = temp;
 				}
 			}
 		}
@@ -2095,7 +2187,7 @@ namespace MathParser
 					Vector a = column(j);
 					Vector b = Q.column(i);
 					real temp = dot(a, b);
-					R.set(i, j, temp);
+					R(i, j) = temp;
 				}
 			}
 		}
@@ -2127,7 +2219,7 @@ namespace MathParser
 					Vector a = column(j);
 					Vector b = Q.column(i);
 					real temp = dot(a, b);
-					R.set(i, j, temp);
+					R(i, j) = temp;
 				}
 			}
 		}
@@ -2151,18 +2243,18 @@ namespace MathParser
 		Matrix Aug(rows, columns, element);
 		Matrix AT(rows, columns, element);
 		AT = AT.transpose();
-		Matrix A = multiply(*this, AT);
+		Matrix A = *this * AT;
 
 		while (A.zeroInDiag()) 
 		{
 			for (int i = 0; i < rows; ++i) 
 			{
-				if (A.get(i, i)) 
+				if (A(i, i)) 
 				{
 					for (int j = 0; j < columns; ++j) 
 					{
-						//carefully choose rows to swap to create a non-zero diagonal
-						if (A.get(i, j) != 0 && A.get(j, i) != 0 && i != j) 
+						//choose rows to swap to create a non-zero diagonal
+						if (A(i, j) != 0 && A(j, i) != 0 && i != j) 
 						{
 							A.swapRows(i, j);
 							Aug.swapRows(i, j);
@@ -2175,23 +2267,24 @@ namespace MathParser
 
 		for (int j = 0; j < columns; ++j) 
 		{//Iterate down matrix and eliminate the lower triangle of values.
-			real pivot = A.get(j, j);
+			real pivot = A(j, j);
 			for (int i = j + 1; i < rows; ++i) {
-				if (i != j && A.get(i, j) != 0) {
+				if (i != j && A(i, j) != 0) {
 					Vector temp = A.row(j);
 					Vector temp2 = Aug.row(j);
 
-					if (abs(A.get(i, j)) == abs(pivot)) {
-						if (A.get(i, j) == pivot) {
+					if (abs(A(i, j)) == abs(pivot)) {
+						if (A(i, j) == pivot) {
 							temp *= -1;
 							temp2 *= -1;
 							goto skip;
 						}
-						if ((A.get(i, j) == (-1 * pivot)) || ((-1 * A.get(i, j)) == pivot)) { goto skip; }
+						if ((A(i, j) == (-1 * pivot)) || ((-1 * A(i, j)) == pivot)) 
+							goto skip;
 					}
-					if (abs(A.get(i, j)) != abs(pivot)) 
+					if (abs(A(i, j)) != abs(pivot)) 
 					{
-						real a = -A.get(i, j) / pivot;
+						real a = -A(i, j) / pivot;
 						temp *= a;
 						temp2 *= a;
 					}
@@ -2206,8 +2299,8 @@ namespace MathParser
 
 		for (int i = 0; i < rows; ++i) 
 		{//Make diagonals into all 1's.
-			if (A.get(i, i) != 0 && A.get(i, i) != 1) {
-				real a = ((real)1 / (A.get(i, i)));
+			if (A(i, i) != 0 && A(i, i) != 1) {
+				real a = ((real)1 / (A(i, i)));
 				A.multiplyRow(i, a);
 				Aug.multiplyRow(i, a);
 			}
@@ -2222,10 +2315,13 @@ namespace MathParser
 		answer.push_back(-1);
 		answer.push_back(-1);
 		real largest = 0;
-		for (int i = 0; i < rows; ++i) {
-			for (int j = 0; j < columns; ++j) {
-				if (i != j && abs(get(i, j)) > largest) {
-					largest = abs(get(i, j));
+		for (int i = 0; i < rows; ++i) 
+		{
+			for (int j = 0; j < columns; ++j) 
+			{
+				if (i != j && std::abs(element[i * columns + j]) > largest) 
+				{
+					largest = std::abs(element[i * columns + j]);
 					answer[0] = i;
 					answer[1] = j;
 				}
@@ -2274,10 +2370,12 @@ namespace MathParser
 		while (!D.isDiagonalized() && counter < limit) 
 		{
 			std::vector<int> elem = D.JacobiIndexing();
-			if (elem[0] > D.rows || elem[1] > D.columns || elem[0] < 0 || elem[1] < 0 || elem[0] == elem[1]) { break; }
+			if (elem[0] > D.rows || elem[1] > D.columns || elem[0] < 0 || elem[1] 
+				< 0 || elem[0] == elem[1]) 
+				break;
 			int p = elem[0];
 			int q = elem[1];
-			real angle = (D.get(q, q) - D.get(p, p)) / (2 * D.get(p, q));
+			real angle = (D(q, q) - D(p, p)) / (2 * D(p, q));
 			int sign = 1;
 			if (angle < 0) { sign = -1; }
 			real t = sign / (abs(angle) + sqrt((angle * angle) + 1));
@@ -2285,9 +2383,9 @@ namespace MathParser
 			real s = t * c;
 			Matrix rot = D.JacobiRotationMatrix(p, q, c, s);
 			Matrix rotT = rot.transpose();
-			D = D.multiply(rotT, D);
+			D = rotT * D;
 			D *= rot;
-			Eigenvectors = Eigenvectors.multiply(Eigenvectors, rot);
+			Eigenvectors = Eigenvectors * rot;
 			++counter;
 		}
 		std::vector<Matrix> answer;
@@ -2307,15 +2405,15 @@ namespace MathParser
 		{
 			std::vector<Matrix> qr = QR();
 			Matrix Eigenvalues = qr[0];
-			Matrix A2 = multiply(qr[1], qr[0]);
+			Matrix A2 = qr[1] * qr[0];
 
 			for (int i = 1; i < iterations; ++i) 
 			{//then, QR decomposition. Use Q as multiplicand where Eigenvectors = Q1*Q2*...Qn
 				qr = A2.QR();
 				if (qr[0].rows == 0 && qr[1].rows == 0) 
 					break;
-				Eigenvalues = Eigenvalues.multiply(Eigenvalues, qr[0]);
-				A2 = A2.multiply(qr[1], qr[0]);
+				Eigenvalues = Eigenvalues * qr[0];
+				A2 = qr[1] * qr[0];
 				qr.clear();
 			}
 			return Eigenvalues;
@@ -2328,7 +2426,7 @@ namespace MathParser
 		if (rows <= 1 || columns <= 1) 
 			return Matrix();
 		Matrix L(rows, columns);
-		L.set(0, 0, sqrt(get(0, 0)));
+		L(0, 0) = std::sqrt(element[0]);
 
 		for (int j = 0; j < columns; ++j) 
 		{
@@ -2336,22 +2434,23 @@ namespace MathParser
 			{
 				if (i == j) 
 				{
-					real temp = get(j, j);
+					real temp = element[j * columns + j];
 					real temp2 = 0;
 					for (int k = 0; k < j; ++k) {
-						temp2 += pow(L.get(j, k), 2);
+						temp2 += pow(L(j, k), 2);
 					}
-					L.set(j, j, sqrt(temp - temp2));
+					L(j, j) = std::sqrt(temp - temp2);
 				}
 
 				if (i > j) {
-					real temp = (1 / L.get(j, j));
-					real temp2 = get(i, j);
+					real temp = (1 / L(j, j));
+					real temp2 = element[i * columns + j];
 					real temp3 = 0;
-					for (int k = 0; k < j; ++k) {
-						temp3 += (L.get(i, k) * L.get(j, k));
-					}
-					if (temp != 0) { L.set(i, j, temp * (temp2 - temp3)); }
+					for (int k = 0; k < j; ++k)
+						temp3 += (L(i, k) * L(j, k));
+
+					if (temp) 
+						L(i, j) = temp * (temp2 - temp3);
 				}
 			}
 		}
@@ -2365,27 +2464,27 @@ namespace MathParser
 			return answer;
 		Matrix L(rows, columns);
 		Matrix D(rows, columns);
-		L.set(0, 0, sqrt(get(0, 0)));
+		L(0, 0) = std::sqrt(element[0]);
 
 		for (int j = 0; j < columns; ++j) {
 			for (int i = j; i < rows; ++i) {
 				if (i == j) {
-					L.set(j, j, 1);
+					L(j, j) = 1;
 					real temp = 0;
 					for (int k = 0; k < j; ++k) {
-						temp += pow(L.get(j, k), 2) * D.get(k, k);
+						temp += pow(L(j, k), 2) * D(k, k);
 					}
-					D.set(j, j, get(j, j) - temp);
+					D(j, j) = element[j * columns + j] - temp;
 				}
 
 				if (i > j) {
-					real temp = (1 / D.get(j, j));
-					real temp2 = get(i, j);
+					real temp = (1 / D(j, j));
+					real temp2 = element[i * columns + j];
 					real temp3 = 0;
 					for (int k = 0; k < j; ++k) {
-						temp3 += (L.get(i, k) * L.get(j, k) * D.get(k, k));
+						temp3 += (L(i, k) * L(j, k) * D(k, k));
 					}
-					L.set(i, j, temp * (temp2 - temp3));
+					L(i, j) = temp * (temp2 - temp3);
 				}
 			}
 		}
@@ -2395,15 +2494,15 @@ namespace MathParser
 		return answer;
 	}
 
-	Matrix Matrix::dominantEigenvector() 
+	Matrix Matrix::dominantEigenvector(int iterations) 
 	{//calculated by power method
 		Matrix A(rows, columns, element);
 		Matrix rd(A.rows, 1);
-		rd.set(0, 0, 1);//set first value of matrix to 1
+		rd(0, 0) = 1;//set first value of matrix to 1
 		Matrix init = rd;
-		for (int i = 0; i < 500; ++i) {
-			rd = A.multiply(A, rd);
-			rd = rd.multiply(rd, 1 / rd.element[A.rows - 1]);
+		for (int i = 0; i < iterations; ++i) {
+			rd = A * rd;
+			rd = rd * (1.0 / rd.element[A.rows - 1]);
 		}
 		return rd;//dominant eigenvector
 	}
@@ -2412,17 +2511,17 @@ namespace MathParser
 	{//calculated by power method
 		Matrix A = *this;
 		Matrix rd(A.rows, 1);
-		rd.set(0, 0, 1);//set first value of matrix to 1
+		rd(0, 0) = 1;//set first value of matrix to 1
 		Matrix init = rd;
 		for (int i = 0; i < iterations; ++i)
 		{
-			rd = A.multiply(A, rd);
-			rd = rd.multiply(rd, 1 / rd.element[A.rows - 1]);
+			rd = A * rd;
+			rd = rd * (1.0 / rd.element[A.rows - 1]);
 		}
 		Matrix step1 = A * rd;
 		step1 *= rd;
 		real egv = step1.sumColumn(0);
-		egv /= rd.multiply(rd, rd).sumColumn(0);
+		egv /= (rd * rd).sumColumn(0);
 		return egv;//dominant eigenvalue
 	}
 
@@ -2553,7 +2652,7 @@ namespace MathParser
 			Matrix A_1 = A * v;
 			A_1 *= v;
 			real eigenval = A_1.sumColumn(0);
-			real val = v.multiply(v, v).sumColumn(0);
+			real val = (v * v).sumColumn(0);
 			if (val != 0) { eigenval /= val; }
 			else { eigenval = 0; }
 			egv.push_back(eigenval);
@@ -2563,7 +2662,7 @@ namespace MathParser
 			Matrix U = v * v_t;
 
 			//U.display();
-			U = U.multiply(U, -1 * eigenval);
+			U = U * (-1.0 * eigenval);
 			A = A.add(A, U);
 		}
 		return egv;
@@ -2579,20 +2678,20 @@ namespace MathParser
 			QR = A.LU();
 			if (QR[0].rows == 0 && QR[1].rows == 0) 
 				break;
-			A = A.multiply(QR[1], QR[0]);
+			A = QR[1] * QR[0];
 		}
 
 		for (int i = 0; i < iterations; ++i) {//then, QR decomposition
 			QR = A.QR();
 			if (QR[0].rows == 0 && QR[1].rows == 0) 
 				break;
-			A = A.multiply(QR[1], QR[0]);
+			A = QR[1] * QR[0];
 		}
 		for (int i = 0; i < iterations; ++i) {//then, QR decomposition
 			QR = A.HouseholderQR();
 			if (QR[0].rows == 0 && QR[1].rows == 0) 
 				break;
-			A = A.multiply(QR[1], QR[0]);
+			A = QR[1] * QR[0];
 		}
 
 		return A;
@@ -2609,20 +2708,20 @@ namespace MathParser
 			QR = A.LU();
 			if (QR[0].rows == 0 && QR[1].rows == 0) 
 				break;
-			A = A.multiply(QR[1], QR[0]);
+			A = QR[1] * QR[0];
 		}
 
 		for (int i = 0; i < iterations; ++i) {//then, QR decomposition
 			QR = A.QR();
 			if (QR[0].rows == 0 && QR[1].rows == 0) 
 				break;
-			A = A.multiply(QR[1], QR[0]);
+			A = QR[1] * QR[0];
 		}
 		for (int i = 0; i < iterations; ++i) {//then, QR decomposition
 			QR = A.HouseholderQR();
 			if (QR[0].rows == 0 && QR[1].rows == 0) 
 				break;
-			A = A.multiply(QR[1], QR[0]);
+			A = QR[1] * QR[0];
 		}
 
 		return eigenvalueMatrix(A, loops);
@@ -2632,7 +2731,7 @@ namespace MathParser
 	{//exponentiates all elements in the matrix by some power
 		for (int i = 0; i < rows; ++i) {
 			for (int j = 0; j < columns; ++j) {
-				set(i, j, pow(get(i, j), n));
+				element[i * columns + j] = pow(element[i * columns + j], n);
 			}
 		}
 	}
@@ -2657,7 +2756,7 @@ namespace MathParser
 
 		Matrix X(M.rows, M.columns, element);//isolate X variable values
 		for (int i = 0; i < X.rows; ++i) 
-			X.set(i, 0, 1);		
+			X(i, 0) = 1;		
 
 		Matrix Y(M.rows, 1, M.column(0));//create seperate vector of y values
 		Matrix lhs = X.transpose();
@@ -2678,7 +2777,7 @@ namespace MathParser
 		Vector cf;
 		std::string funct = "f(";
 		for (int i = 0; i < coef.rows; ++i) {
-			cf.push_back(coef.get(i, 0));
+			cf.push_back(coef(i, 0));
 			funct += (i+'a') + ",";
 		}
 		funct.pop_back();
@@ -2714,7 +2813,7 @@ namespace MathParser
 		// Calculate resid. = y-yhat. In MINITAB format, column 0 is the y-value column.
 		Vector residuals;
 		for (int i = 0; i < yhat.size(); ++i)
-			residuals.push_back(get(i, 0) - yhat[i]);		
+			residuals.push_back(element[i * columns] - yhat[i]);
 
 		return residuals;
 	}
@@ -2745,10 +2844,11 @@ namespace MathParser
 		Vector explainedError;
 		Vector unexplainedError;
 		Vector totalError;
-		for (int i = 0; i < resi.size(); ++i) {
-			explainedError.push_back(pow(yhat[i] - ymean, 2));		// sum(yhat - yman)^2
-			unexplainedError.push_back(pow(get(i, 0) - yhat[i], 2));	// sum(y - yhat)^2
-			totalError.push_back(pow(get(i, 0) - ymean, 2));			// sum(y - ymean)^2
+		for (int i = 0; i < resi.size(); ++i) 
+		{
+			explainedError.push_back(pow(yhat[i] - ymean, 2));// sum(yhat - yman)^2
+			unexplainedError.push_back(pow(element[i * columns] - yhat[i], 2));	// sum(y - yhat)^2
+			totalError.push_back(pow(element[i * columns] - ymean, 2));// sum(y - ymean)^2
 		}
 
 		//degress of freedom calculations
@@ -2802,9 +2902,9 @@ namespace MathParser
 		Vector unexplainedError;
 		Vector totalError;
 		for (int i = 0; i < resi.size(); ++i) {
-			explainedError.push_back(pow(yhat[i] - ymean, 2));			// sum(yhat - yman)^2
-			unexplainedError.push_back(pow(get(i, 0) - yhat[i], 2));	// sum(y - yhat)^2
-			totalError.push_back(pow(get(i, 0) - ymean, 2));			// sum(y - ymean)^2
+			explainedError.push_back(pow(yhat[i] - ymean, 2));// sum(yhat - yman)^2
+			unexplainedError.push_back(pow(element[i * columns] - yhat[i], 2));	// sum(y - yhat)^2
+			totalError.push_back(pow(element[i * columns] - ymean, 2));	// sum(y - ymean)^2
 		}
 
 		//degress of freedom calculations
@@ -2858,9 +2958,9 @@ namespace MathParser
 		Vector unexplainedError;
 		Vector totalError;
 		for (int i = 0; i < resi.size(); ++i) {
-			explainedError.push_back(pow(yhat[i] - ymean, 2));			// sum(yhat - yman)^2
-			unexplainedError.push_back(pow(get(i, 0) - yhat[i], 2));	// sum(y - yhat)^2
-			totalError.push_back(pow(get(i, 0) - ymean, 2));			// sum(y - ymean)^2
+			explainedError.push_back(pow(yhat[i] - ymean, 2));// sum(yhat - yman)^2
+			unexplainedError.push_back(pow(element[i * columns] - yhat[i], 2));	// sum(y - yhat)^2
+			totalError.push_back(pow(element[i * columns] - ymean, 2));// sum(y - ymean)^2
 		}
 
 		//degress of freedom calculations
@@ -2948,26 +3048,13 @@ namespace MathParser
 		return Polynomial(answer);
 	}
 
-	std::vector<Vector> Matrix::toVectorArray() 
-	{
-		std::vector<Vector> arr;
-		for (int i = 0; i < rows; ++i) {
-			Vector ans;
-			for (int j = 0; j < columns; ++j) {
-				ans.push_back(get(i, j));
-			}
-			arr.push_back(ans);
-		}
-		return arr;
-	}
-
 	Matrix directionMatrix(Vector v) 
 	{
 		int sz = v.size() + 1;
 		Matrix A(sz, sz);
 		A.identity();
 		for (int i = 0; i < v.size(); ++i) 
-			A.set(i, i, v[i]);
+			A(i, i) = v[i];
 		return A;
 	}
 
@@ -2976,21 +3063,27 @@ namespace MathParser
 		return identityMatrix(n, n); 
 	}
 
-	Matrix identityMatrix(int n, int m) {
+	Matrix identityMatrix(int n, int m) 
+	{
 		Vector vals(n * m);
-		for (int i = 0; i < n; ++i) {
-			for (int j = 0; j < m; ++j) {
+		for (int i = 0; i < n; ++i) 
+		{
+			for (int j = 0; j < m; ++j) 
+			{
 				vals[i * m + j] = 0;
-				if (i == j) { vals[i * m + j] = 1; }
+				if (i == j) 
+					vals[i * m + j] = 1;
 			}
 		}
 		return Matrix(n, m, vals);
 	}
 
-	Matrix positionMatrix(Vector v) {
+	Matrix positionMatrix(Vector v) 
+	{
 		int sz = v.size() + 1;
 		Matrix A(sz, sz);
-		for (int i = 0; i < v.size(); ++i) { A.set(i, i, v[i]); }
+		for (int i = 0; i < v.size(); ++i) 
+			A(i, i) = v[i];
 		return A;
 	}
 
@@ -3003,10 +3096,10 @@ namespace MathParser
 		if (v.size() == 3) 
 		{//2D rotation matrix
 			Matrix M(2, 2);
-			M.set(0, 0, cos(v[0]));
-			M.set(0, 1, -sin(v[0]));
-			M.set(1, 0, sin(v[0]));
-			M.set(1, 1, cos(v[0]));
+			M(0, 0) = (v[0]);
+			M(0, 1) = (v[0]);
+			M(1, 0) = (v[0]);
+			M(1, 1) = (v[0]);
 			return M;
 		}
 		if (v.size() == 4) 
@@ -3015,30 +3108,30 @@ namespace MathParser
 			{//x-axis rotation
 				Matrix M(4, 4);
 				M.identity();
-				M.set(1, 1, cos(v[0]));
-				M.set(1, 2, -sin(v[0]));
-				M.set(2, 1, sin(v[0]));
-				M.set(2, 2, cos(v[0]));
+				M(1, 1) = (v[0]);
+				M(1, 2) = (v[0]);
+				M(2, 1) = (v[0]);
+				M(2, 2) = (v[0]);
 				return M;
 			}
 			if (v[2] == 1) 
 			{//y-axis rotation
 				Matrix M(4, 4);
 				M.identity();
-				M.set(0, 0, cos(v[0]));
-				M.set(0, 2, -sin(v[0]));
-				M.set(2, 0, sin(v[0]));
-				M.set(2, 2, cos(v[0]));
+				M(0, 0) = (v[0]);
+				M(0, 2) = (v[0]);
+				M(2, 0) = (v[0]);
+				M(2, 2) = (v[0]);
 				return M;
 			}
 			if (v[3] == 1) 
 			{//z-axis rotation
 				Matrix M(4, 4);
 				M.identity();
-				M.set(0, 0, cos(v[0]));
-				M.set(0, 1, -sin(v[0]));
-				M.set(1, 0, sin(v[0]));
-				M.set(1, 1, cos(v[0]));
+				M(0, 0) = (v[0]);
+				M(0, 1) = (v[0]);
+				M(1, 0) = (v[0]);
+				M(1, 1) = (v[0]);
 				return M;
 			}
 		}
@@ -3050,7 +3143,7 @@ namespace MathParser
 		Matrix A(sz, sz);
 		A.identity();
 		for (int i = 0; i < v.size(); ++i) 
-			A.set(i, i, v[i]);
+			A(i, i) = v[i];
 		return A;
 	}
 
@@ -3062,13 +3155,14 @@ namespace MathParser
 			Matrix A(4, 4);
 			A.identity();
 			for (int i = 0; i < 3; ++i) 
-				A.set(i, A.columns - 1, v[i]);
+				A(i, A.columns - 1) = v[i];
 			return A;
 		}
 		return Matrix();
 	}
 
-	Matrix companionMatrix(Polynomial p) {//Froebenius form
+	Matrix companionMatrix(Polynomial p) 
+	{//Froebenius form
 		p = p.makeMonic();
 		int N = p.size() - 1;
 		std::vector<real> elem;
@@ -3092,16 +3186,21 @@ namespace MathParser
 		return Matrix(N, N, elem);
 	}
 
-	Matrix Vandermonde(Polynomial p) {
-		//create a Vandermonde matrix from the vector of coefficients from a_n-1 to a0,
-		//which is suitable for finding the complex eigenvalues of the polynomial
+	Matrix Vandermonde(Polynomial p) 
+	{
+		// Create a Vandermonde matrix from the vector of coefficients from a_n-1 to a0,
+		// which is suitable for finding the complex eigenvalues of the polynomial.
 		Matrix CM = companionMatrix(p);
 		Vector co(p);
 		Matrix V((p.size() - 1), p.size() - 1);
-		for (int i = 0; i < p.size() - 1; ++i) {
-			for (int j = 0; j < p.size() - 1; ++j) {
-				if (i == 0) { V.set(i, j, 1); }
-				else { V.set(i, j, pow(co[i], j + 1)); }
+		for (int i = 0; i < p.size() - 1; ++i) 
+		{
+			for (int j = 0; j < p.size() - 1; ++j) 
+			{
+				if (!i) 
+					V(i, j) = 1;
+				else
+					V(i, j) = pow(co[i], j + 1);
 			}
 		}
 		return V;
@@ -3126,7 +3225,7 @@ namespace MathParser
 	}
 
 	Matrix wedgeProduct(Matrix& A, Matrix& B)
-	{//Ref: https://math.wikia.org/wiki/Outer_product
+	{//aka exterior product, ref: https://math.wikia.org/wiki/Outer_product
 		Matrix prodA = outerProduct(A, B);
 		Matrix prodB = outerProduct(B, A);
 		return prodA - prodB;
@@ -3134,28 +3233,25 @@ namespace MathParser
 
 	Matrix Matrix::multiply(Matrix& A, Matrix& B)
 	{
+		// Handle case where row/column mismatch prevents multiplication.
+		if (A.columns != B.rows)
+			return Matrix();
+
 		int size = A.rows * B.columns;
 		Vector answerN(size);
 		if (B.columns == 1)
 		{
-			for (int i = 0; i < A.rows; ++i) {
-				for (int j = 0; j < A.columns; ++j) {
-					answerN[i] += A.get(i, j) * B.get(j, 0);
-				}
-			}
+			for (int i = 0; i < A.rows; ++i) 
+				for (int j = 0; j < A.columns; ++j)
+					answerN[i] += A(i, j) * B(j, 0);							
+
 			return Matrix(A.rows, B.columns, answerN);
 		}
 
-		for (int i = 0; i < A.rows; ++i)
-		{
-			for (int j = 0; j < B.columns; ++j)
-			{
-				for (int k = 0; k < A.columns; ++k)
-				{
-					answerN[(i * B.columns) + j] += A.get(i, k) * B.get(k, j);
-				}
-			}
-		}
+		for (int i = 0; i < A.rows; ++i)		
+			for (int j = 0; j < B.columns; ++j)			
+				for (int k = 0; k < A.columns; ++k)				
+					answerN[i * B.columns + j] += A(i, k) * B(k, j);								
 
 		return Matrix(A.rows, B.columns, answerN);
 	}
@@ -3166,7 +3262,7 @@ namespace MathParser
 		{
 			for (int j = 0; j < A.columns; ++j)
 			{
-				answerN[(i * A.columns) + j] = A.get(i, j) * B;
+				answerN[(i * A.columns) + j] = A(i, j) * B;
 			}
 		}
 		return Matrix(A.rows, A.columns, answerN);
@@ -3179,7 +3275,7 @@ namespace MathParser
 		{
 			for (int j = 0; j < A.columns; ++j)
 			{
-				answerN[(i * A.columns) + j] = A.get(i, j) * b;
+				answerN[(i * A.columns) + j] = A(i, j) * b;
 			}
 		}
 		return Matrix(A.rows, A.columns, answerN);
@@ -3197,7 +3293,7 @@ namespace MathParser
 		{
 			for (int j = 0; j < B.columns; ++j)
 			{
-				answerN[(i * A.columns) + j] = A.get(i, j) + B.get(i, j);
+				answerN[(i * A.columns) + j] = A(i, j) + B(i, j);
 			}
 		}
 		return Matrix(B.rows, A.columns, answerN);
@@ -3212,7 +3308,7 @@ namespace MathParser
 		{
 			for (int j = 0; j < A.columns; ++j)
 			{
-				answerN[(i * A.columns) + j] = A.get(i, j) + B;
+				answerN[(i * A.columns) + j] = A(i, j) + B;
 			}
 		}
 		return Matrix(A.rows, A.columns, answerN);
@@ -3228,17 +3324,12 @@ namespace MathParser
 		if (A.size() != B.size())
 			return Matrix();
 		int size = A.rows * A.columns;
-		Vector answerN;
-		answerN.resize(size, 0);
-		for (int i = 0; i < size; ++i) { answerN[i] = 0; }
+		Vector answerN(size);
 
-		for (int i = 0; i < A.rows; ++i)
-		{
-			for (int j = 0; j < B.columns; ++j)
-			{
-				answerN[(i * A.columns) + j] += A.get(i, j) - B.get(i, j);
-			}
-		}
+		for (int i = 0; i < A.rows; ++i)		
+			for (int j = 0; j < B.columns; ++j)			
+				answerN[(i * A.columns) + j] += A(i, j) - B(i, j);					
+
 		return Matrix(B.rows, A.columns, answerN);
 	}
 
@@ -3251,7 +3342,7 @@ namespace MathParser
 		{
 			for (int j = 0; j < A.columns; ++j)
 			{
-				answerN[(i * A.columns) + j] = A.get(i, j) - B;
+				answerN[(i * A.columns) + j] = A(i, j) - B;
 			}
 		}
 		return Matrix(A.rows, A.columns, answerN);
@@ -3259,24 +3350,24 @@ namespace MathParser
 
 	Matrix Matrix::subtract(real b, Matrix& a)
 	{
-		Matrix temp = multiply(-1, a);
+		Matrix temp = -1 * a;
 		return add(temp, b);
 	}
 
 	Matrix Matrix::divide(Matrix& p, Matrix& q)
 	{
 		Matrix inv = q.inverse();
-		return p.multiply(p, inv);
+		return p * inv;
 	}
 
 	Matrix Matrix::divide(Matrix& p2, real q)
 	{
-		return p2.multiply(p2, 1.0/q);
+		return p2 * (1.0/q);
 	}
 
 	Matrix Matrix::divide(real q, Matrix& p2)
 	{
-		return p2.multiply(p2, 1.0 / q);
+		return p2 * (1.0 / q);
 	}
 
 	//Overloaded operators:
@@ -3285,8 +3376,8 @@ namespace MathParser
 			rows == rhs.rows && columns == rhs.columns);
 	}
 	bool Matrix::operator!=(Matrix& rhs) { return !(*this == rhs); }
-	Matrix Matrix::operator*=(Matrix& rhs) { *this = multiply(*this, rhs); return*this; }
-	Matrix Matrix::operator*=(real x) { *this = multiply(*this, x); return *this; }
+	Matrix Matrix::operator*=(Matrix& rhs) { *this = *this * rhs; return*this; }
+	Matrix Matrix::operator*=(real x) { *this = *this * x; return *this; }
 	Matrix Matrix::operator+=(Matrix& rhs) { *this = add(*this, rhs); return*this; }
 	Matrix Matrix::operator+=(real x) { *this = add(*this, x); return *this; }
 	Matrix Matrix::operator+(Matrix& rhs) { return add(*this, rhs); }

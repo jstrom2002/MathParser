@@ -234,8 +234,8 @@ namespace MathParser
 			for (int j = 0; j < i; ++j) {
 				if (i != j) {
 					real temp = correlationCoefficient(A.column(i), A.column(j));
-					M.set(i, j, temp);
-					M.set(j, i, temp);
+					M(i, j) = temp;
+					M(j, i) = temp;
 				}
 			}
 		}
@@ -247,7 +247,7 @@ namespace MathParser
 		Matrix A(M.columns, M.columns);
 		for (int i = 0; i < M.columns; ++i) {
 			for (int j = 0; j < M.columns; ++j) {
-				A.set(i, j, covariance(M.column(i), M.column(j)));
+				A(i, j) = covariance(M.column(i), M.column(j));
 			}
 		}
 		return A;

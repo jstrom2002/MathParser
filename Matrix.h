@@ -1,5 +1,7 @@
 /**
-*   Generic matrix class. All matrices contain real valued members.
+*   Generic matrix class. All matrices contain real valued members. Entries are stored in
+*	an array indexed by row-major indexing. Accessing entries is performed by use of the
+*	'()' operator, ie 'A(0,0) = 1.'
 */
 
 #pragma once
@@ -33,6 +35,9 @@ namespace MathParser
 		// Overloaded operators:
 		bool operator==(Matrix& rhs);
 		bool operator!=(Matrix& rhs);
+		real& operator()(int r, int c);
+		real operator()(int r, int c) const;
+
 		Matrix operator*=(Matrix& rhs);
 		Matrix operator*=(real x);
 		Matrix operator+=(Matrix& rhs);
@@ -72,7 +77,7 @@ namespace MathParser
 		real ChiSquareDegreesFreedom();
 		real ChiSquareTestStatistic();
 		Matrix Cholesky();
-		void clear() { element.clear(); rows = columns = 0; }
+		void clear();
 		Vector column(int c);
 		real columnAbsMax(int r);
 		real columnMax(int r);
@@ -92,7 +97,7 @@ namespace MathParser
 		real detExact();
 		Vector diagonal();
 		Matrix directSum(Matrix A, Matrix B);
-		Matrix dominantEigenvector();
+		Matrix dominantEigenvector(int iterations = 500);
 		real dominantEigenvalue(int iterations = 500);
 		Vector eigenvaluesByGaussianElimination();
 		Vector eigenvaluesRealExact();
@@ -111,7 +116,6 @@ namespace MathParser
 		real FrobeniusNorm();
 		Matrix GaussianElimination();//exact calculation of row-echelon form
 		real geometricMean();
-		real get(int i, int j);
 		int getPivot(int rw);
 		int getReversePivot(int rw);
 		Matrix GivensRotationMatrix(real a1, real a2, int r1, int r2);
@@ -158,7 +162,6 @@ namespace MathParser
 		int nullity();
 		Matrix nullSpace();
 		real pNorm(real p);
-		std::vector<int> pivotColumns();
 		Matrix populationCovarianceMatrix();
 		real populationStandardDeviation();
 		void power(real n);
@@ -194,7 +197,6 @@ namespace MathParser
 		real Rsquared();
 		Matrix sampleCovarianceMatrix();
 		real sampleStandardDeviation();
-		void set(int i, int j, real x);
 		void setColumnNonZeroValues(int col, real x);
 		void setRowNonZeroValues(int rw, real x);
 		void setRow(int rw, Vector n);
@@ -215,7 +217,6 @@ namespace MathParser
 		std::vector<Matrix> thinQR();
 		std::vector<Matrix> thinHouseholderQR();
 		virtual std::string to_string(int precision = 4);
-		std::vector<Vector> toVectorArray();
 		Matrix transpose();
 		real trace();
 		void trim();
@@ -240,6 +241,9 @@ namespace MathParser
 			Matrix divide(Matrix& p, Matrix& q);
 			Matrix divide(Matrix& p2, real q);
 			Matrix divide(real q, Matrix& p2);
+			
+			// Helper functions for class methods:
+			std::vector<int> pivotColumns();
 	};
 
 	Matrix directionMatrix(Vector v);

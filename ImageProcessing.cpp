@@ -77,7 +77,7 @@ namespace MathParser
 			for (int i = 0; i < A.rows; ++i) {
 				for (int j = 0; j < A.columns; ++j) {
 					pixelArray[i * A.columns + j][0] = pixelArray[i * A.columns + j][1] 
-						= pixelArray[i * A.columns + j][2] = std::floor(A.get(i, j));
+						= pixelArray[i * A.columns + j][2] = std::floor(A(i, j));
 				}
 			}
 
@@ -719,8 +719,9 @@ namespace MathParser
 		real scale2X = -0.5 / (sigmaX * sigmaX);
 		real sum = 0;
 
-		std::vector<real> cd(sz);
+		std::vector<real> cd(sz,0);
 
+		// For smaller sized kernels, use precalculated array of values.
 		const int SMALL_GAUSSIAN_SIZE = 7;
 		static const float small_gaussian_tab[][SMALL_GAUSSIAN_SIZE] = {
 			{1.f},
@@ -729,7 +730,9 @@ namespace MathParser
 			{0.03125f, 0.109375f, 0.21875f, 0.28125f, 0.21875f, 0.109375f, 0.03125f}
 		};
 
-		const float* fixed_kernel = sz % 2 == 1 && sz <= SMALL_GAUSSIAN_SIZE && sigma <= 0 ? small_gaussian_tab[sz >> 1] : 0;
+		// For larger sized kernels, do calculation.
+		const float* fixed_kernel = sz % 2 == 1 && sz <= SMALL_GAUSSIAN_SIZE && 
+			sigma <= 0 ? small_gaussian_tab[sz >> 1] : 0;
 		int i;
 		for (i = 0; i < sz; i++) {
 			real x = i - (sz - 1) * 0.5;

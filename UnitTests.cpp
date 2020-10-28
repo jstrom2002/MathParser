@@ -528,6 +528,80 @@ namespace MathParser
 		return true;
 	}
 
+	bool UnitTests::operatorTest()
+	{
+		std::vector<real> p4 = std::vector<real>{
+			3,2,2,
+			2,3,-2
+		};
+		Matrix A1(2,3,p4);
+		Matrix A2(2,3,p4);
+		
+		// Test boolean operators.
+		if (A1 != A2)
+		{
+			std::cout << "Matrix '==' operator failed" << std::endl;
+			return false;
+		}
+
+		// Test '()' operator. First, check accessing values.
+		for (int i = 0; i < 2; ++i)
+			for (int j = 0; j < 3; ++j)
+				if (A1(i, j) != p4[i * 3 + j])
+				{
+					std::cout << "test result: " << A1(i, j) << std::endl;
+					std::cout << "expected result: " << p4[i * 3 + j] << std::endl;
+					return false;
+				}
+
+		// Now check setting values with '()' operator.
+		for (int i = 0; i < 2; ++i)
+			for (int j = 0; j < 3; ++j)
+			{
+				A1(i, j) = 0;
+				if (A1(i, j))
+				{
+					std::cout << "test result: " << A1(i, j) << std::endl;
+					std::cout << "expected result: 0" << std::endl;
+					return false;
+				}
+			}
+
+		// Check arithmetic operators.
+		A1 += A2;
+		if (A1 != A2)
+		{
+			std::cout << "test result: " << A1.to_string() << std::endl;
+			std::cout << "expected result: " << A2.to_string() << std::endl;
+		}
+		A1 -= A2;
+		Matrix emptyMat = Matrix(A2.rows, A2.columns);
+		if (A1 != emptyMat)
+		{
+			std::cout << "test result: " << A1.to_string() << std::endl;
+			std::cout << "expected result: " << emptyMat.to_string() << std::endl;
+		}
+		A2 *= emptyMat;
+		if (A2.size())// Check to see if mismatched matrix sizes are caught.
+		{
+			std::cout << "test result: " << A2.to_string() << std::endl;
+			std::cout << "expected result: " << emptyMat.to_string() << std::endl;
+		}
+
+		// Check results of matrix multiplication of A2 by zero matrix.
+		A2 = A1;
+		emptyMat = emptyMat.transpose();
+		A2 *= emptyMat;
+		Matrix A3(A2.rows, A2.columns);
+		if (A2 != A3 || A2.maxValue() != 0)
+		{
+			std::cout << "test result: " << A1.to_string() << std::endl;
+			std::cout << "expected result: " << emptyMat.to_string() << std::endl;
+		}
+
+		return true;
+	}
+
 	bool UnitTests::matrixClassTest()
 	{
 		std::vector<real> p = std::vector<real>{
@@ -560,16 +634,6 @@ namespace MathParser
 		Matrix C(4, 4, p3);
 		Matrix D(2, 3, p4);
 		Matrix Mat2 = GaussianKernel2D(5,1);
-
-		// Test: matrix element accessing with the 'get()' command.
-		for(int i=0; i<6; ++i)
-			for(int j=0; j<6; ++j)
-				if (B.get(i, j) != p2[i * 6 + j])
-				{
-					std::cout << "test result: " << B.get(i, j) << std::endl;
-					std::cout << "expected result: " << p2[i * 6 + j] << std::endl;
-					return false;
-				}
 
 		// Test: Gauss-Jordan Elimination (can be extremely slow or not converge at all)
 		Matrix GJE = A.GaussianElimination();
@@ -608,82 +672,89 @@ namespace MathParser
 	{
 		bool passed = false;
 
-		//// Run replaceString test.
-		//if (!(passed = replaceStringTest()))
-		//{
-		//	std::cout << "ERROR! Replace string test failed." << std::endl;
-		//	return;
-		//}
+		// Run replaceString test.
+		if (!(passed = replaceStringTest()))
+		{
+			std::cout << "ERROR! Replace string test failed." << std::endl;
+			return;
+		}
 
-		//// Find nearest real test.
-		//if (!(passed = findNearestRealTest()))
-		//{
-		//	std::cout << "ERROR! Find nearest real test failed." << std::endl;
-		//	return;
-		//}
+		// Find nearest real test.
+		if (!(passed = findNearestRealTest()))
+		{
+			std::cout << "ERROR! Find nearest real test failed." << std::endl;
+			return;
+		}
 
-		//// Get nearest real test.
-		//if (!(passed = getNearestRealTest()))
-		//{
-		//	std::cout << "ERROR! Get nearest real test failed." << std::endl;
-		//	return;
-		//}
+		// Get nearest real test.
+		if (!(passed = getNearestRealTest()))
+		{
+			std::cout << "ERROR! Get nearest real test failed." << std::endl;
+			return;
+		}
 
-		//// Find count operators test.
-		//if (!(passed = countOperatorsTest()))
-		//{
-		//	std::cout << "ERROR! count operators test failed." << std::endl;
-		//	return;
-		//}
+		// Find count operators test.
+		if (!(passed = countOperatorsTest()))
+		{
+			std::cout << "ERROR! count operators test failed." << std::endl;
+			return;
+		}
 
-		//// Find count complex numbers test.
-		//if (!(passed = countComplexNumbersTest()))
-		//{
-		//	std::cout << "ERROR! count complex numbers test failed." << std::endl;
-		//	return;
-		//}
+		// Find count complex numbers test.
+		if (!(passed = countComplexNumbersTest()))
+		{
+			std::cout << "ERROR! count complex numbers test failed." << std::endl;
+			return;
+		}
 
-		//// Run parseNInputNumbers test.
-		//if (!(passed = parseNInputNumbersTest()))
-		//{
-		//	std::cout << "ERROR! parseNInputNumbers test failed." << std::endl;
-		//	return;
-		//}
+		// Run parseNInputNumbers test.
+		if (!(passed = parseNInputNumbersTest()))
+		{
+			std::cout << "ERROR! parseNInputNumbers test failed." << std::endl;
+			return;
+		}
 
-		//// Run processTwoTermOperation test.
-		//if (!(passed = processTwoTermOperationTest()))
-		//{
-		//	std::cout << "ERROR! processTwoTermOperation test failed." << std::endl;
-		//	return;
-		//}
+		// Run processTwoTermOperation test.
+		if (!(passed = processTwoTermOperationTest()))
+		{
+			std::cout << "ERROR! processTwoTermOperation test failed." << std::endl;
+			return;
+		}
 
-		//// Run calculateArithmetic test.
-		//if (!(passed = calculateArithmeticTest()))
-		//{
-		//	std::cout << "ERROR! Calculate arithmetic test failed." << std::endl;
-		//	return;
-		//}
+		// Run calculateArithmetic test.
+		if (!(passed = calculateArithmeticTest()))
+		{
+			std::cout << "ERROR! Calculate arithmetic test failed." << std::endl;
+			return;
+		}
 
-		//// Run parser test.
-		//if (!(passed = parserTest()))
-		//{
-		//	std::cout << "ERROR! Parser test failed." << std::endl;
-		//	return;
-		//}
+		// Run parser test.
+		if (!(passed = parserTest()))
+		{
+			std::cout << "ERROR! Parser test failed." << std::endl;
+			return;
+		}
 
-		//// Run polynomial arithmetic test.
-		//if (!(passed = polynomialArithmeticTest()))
-		//{
-		//	std::cout << "ERROR! Polynomial arithmetic test failed." << std::endl;
-		//	return;
-		//}
+		// Run operator test.
+		if (!(passed = operatorTest()))
+		{
+			std::cout << "ERROR! Operator test failed." << std::endl;
+			return;
+		}
 
-		//// Run polynomial root test.
-		//if (!(passed = rootTest()))
-		//{
-		//	std::cout << "ERROR! Root test failed." << std::endl;
-		//	return;
-		//}
+		// Run polynomial arithmetic test.
+		if (!(passed = polynomialArithmeticTest()))
+		{
+			std::cout << "ERROR! Polynomial arithmetic test failed." << std::endl;
+			return;
+		}
+
+		// Run polynomial root test.
+		if (!(passed = rootTest()))
+		{
+			std::cout << "ERROR! Root test failed." << std::endl;
+			return;
+		}
 
 		// Run matrix class test.
 		if (!(passed = matrixClassTest()))
