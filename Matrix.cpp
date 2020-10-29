@@ -6,10 +6,10 @@
 #include "MathLib.h"
 #include "StringUtils.h"
 #include "Parsing.h"
+#include "FileIO.h"
 #include <ctime>
 #include <iomanip>
 #include <fstream>
-#include <WinSock2.h>
 
 namespace std
 {
@@ -366,181 +366,34 @@ namespace MathParser
 
 	void imwrite(std::string filename, Matrix& M, int colorDepth)
 	{//Ref: https://en.wikipedia.org/wiki/BMP_file_format#Example_1
-		FILE* f = fopen(filename.c_str(), "wb");
-
-		int rowSize = std::floor(((colorDepth * M.columns) + 31.0) / 32.0) * 4;
-		
-		// Write first 14 byte BMP ID header.
-		uint16_t bmpID = htons(0x424D);//('B' + 'M');
-		uint32_t fileBytes = htonl(M.rows*M.columns*4 + 14 + 40);
-		uint16_t dummy = (0);
-		uint32_t offsetToData = htonl(14+40);
-		fwrite(&bmpID, sizeof(uint16_t), 1, f);
-		fwrite(&fileBytes, sizeof(uint32_t), 1, f);
-		fwrite(&dummy, sizeof(uint16_t), 1, f);
-		fwrite(&dummy, sizeof(uint16_t), 1, f);
-		fwrite(&offsetToData, sizeof(uint32_t), 1, f);
-
-		// Write 40 byte DIB header.
-		uint32_t bytesInHeader2 = htonl(40);
-		int32_t bmpWidth2 = htonl(M.columns);
-		int32_t bmpHeight2 = htonl(M.rows);
-		uint16_t colorPlanes = htons(1);
-		uint16_t bitsPerPixel = htons(32);
-		uint32_t compressionMethod = htonl(0);
-		uint32_t bmpSize = htonl(M.rows*M.columns*4);
-		uint32_t pixelPerMeterX = htonl(2835);
-		uint32_t pixelPerMeterY = htonl(2835);
-		uint32_t colorMapUsed = (0);
-		uint32_t significantColors = (0);
-		fwrite(&bytesInHeader2, sizeof(uint32_t), 1, f);
-		fwrite(&bmpWidth2, sizeof(int32_t), 1, f);
-		fwrite(&bmpHeight2, sizeof(int32_t), 1, f);
-		fwrite(&colorPlanes, sizeof(uint16_t), 1, f);
-		fwrite(&bitsPerPixel, sizeof(uint16_t), 1, f);
-		fwrite(&compressionMethod, sizeof(uint32_t), 1, f);
-		fwrite(&bmpSize, sizeof(uint32_t), 1, f);
-		fwrite(&pixelPerMeterX, sizeof(uint32_t), 1, f);
-		fwrite(&pixelPerMeterY, sizeof(uint32_t), 1, f);
-		fwrite(&colorMapUsed, sizeof(uint32_t), 1, f);
-		fwrite(&significantColors, sizeof(uint32_t), 1, f);
-
-		//write pixel data.
-		unsigned char val255 = 255;
-		int counter = 0;
-		for (int i = 0; i < M.size(); i++) 
-		{
-			{	// Convert back from Gray to RGB and write pixels to file.
-				unsigned char R = (M.element[i] * 0.299) * 255;
-				unsigned char G = (M.element[i] * 0.587) * 255;
-				unsigned char B = (M.element[i] * 0.114) * 255;
-				fwrite(&val255, sizeof(unsigned char), 1, f);
-				fwrite(&R, sizeof(unsigned char), 1, f);
-				fwrite(&G, sizeof(unsigned char), 1, f);
-				fwrite(&B, sizeof(unsigned char), 1, f);
-				counter += 4;
-			}
-		}		
-		fclose(f);
-	}
-
-	void csvwrite(std::string filename, Matrix& M)
-	{
-		FILE* file1 = fopen(filename.c_str(), "w");
-		while (file1)
-		{
-			for (int i = 0; i < M.rows; ++i)
-			{
-				for (int j = 0; j < M.columns; ++j)
-				{
-					if (j < M.columns - 1)
-						printf("%d,", M.element[i * M.columns + j]);
-					else if (i < M.rows - 1)
-						printf("%d\n", M.element[i * M.columns + j]);
-					else
-						printf("%d", M.element[i * M.columns + j]);
-				}
-			}
-			fclose(file1);
-		}
+		std::string ext = getExtension(filename);
+		if (ext == ".bmp")
+			saveBMP(filename, M.rows, M.columns, 24, M.element.get());
+		else if (ext == ".ppm")
+			savePPM(filename, M.rows, M.columns, 24, M.element.get());
+		else if (ext == ".tga")
+			saveTGA(filename, M.rows, M.columns, 24, M.element.get());
 	}
 
 	Matrix imread(std::string filename)
 	{
-		std::vector<real> element;
-		int wdt = 0;
-		int hgt = 0;
-		std::string ext = getExtension(filename);
+		std::vector<real> output;
+		int rows = 0;
+		int columns = 0;
+		std::string ext = getExtension(filename);		
+
 		if (ext == ".bmp")
-		{
-			std::vector<unsigned char> header;
-			int numberOfBytes = 0;
-			int reservedBytes = 0;
-			int headerSize = 0;
-			int colorDepth = 0;
-			int padBytes = 0;
-			int rowSize = 0;
+			loadBMP(filename, &rows, &columns, &output);
+		else if (ext == ".ppm")
+			loadPPM(filename, &rows, &columns, &output);
+		else if (ext == ".tga")
+			loadTGA(filename, &rows, &columns, &output);
 
-			//open BMP file
-			FILE* f = fopen(filename.c_str(), "rb");
+		// Add empty pixels if there was some error during image loading.
+		while (output.size() < rows * columns)
+			output.push_back(0);
 
-			//read preliminary file data -- 14 bytes
-			unsigned char prelimData[14];
-			fread(prelimData, sizeof(unsigned char), 14, f);
-			for (int i = 0; i < 14; ++i) { header.push_back(prelimData[i]); }
-			numberOfBytes = (header[5] << 24) ^ (header[4] << 16) ^ (header[3] << 8) ^ header[2];//read number of bytes in file
-			reservedBytes = (header[9] << 24) ^ (header[8] << 16) ^ (header[7] << 8) ^ header[6];//read reserved data
-			headerSize = (header[13] << 24) ^ (header[12] << 16) ^ (header[11] << 8) ^ header[10];//read starting address
-
-			//read and interpret file header data
-			unsigned char* headerData = new unsigned char[headerSize - 14];
-			fread(headerData, sizeof(unsigned char), headerSize - 14, f);//read the 54-byte header
-			for (int i = 0; i < headerSize - 14; ++i) { header.push_back(headerData[i]); }
-
-			//initialize class variables;
-			wdt = (header[21] << 24) ^ (header[20] << 16) ^ (header[19] << 8) ^ header[18];//gives image height 
-			hgt = (header[25] << 24) ^ (header[24] << 16) ^ (header[23] << 8) ^ header[22];//gives image width
-			colorDepth = (header[27] << 8) ^ header[28]; //read color depth to determine color array
-			rowSize = std::floor(((colorDepth * wdt) + 31.0) / 32.0) * 4;
-
-			// Now that the header has been read, load all subsequent bytes.
-			std::vector<unsigned char> data;
-			unsigned char data2;
-			while (fread(&data2, sizeof(unsigned char), 1, f))
-				data.push_back(data2);
-			fclose(f);
-
-			if (colorDepth == 8)// If already grayscale, just copy array of data to element array.
-			{
-				for (int i = 0; i < data.size(); ++i)
-					element.push_back(data[i]);
-			}
-			else// Else, convert to grayscale.
-			{
-				int pixelCount = 0;//counts the number of pixel vectors read
-				std::vector<unsigned char> tempVec;
-				if (colorDepth == 24) {
-					for (int i = 0; i < data.size(); ++i) {
-						if (i % rowSize < rowSize - padBytes) {
-							if (i > 0 && i % 3 == 0)
-							{	// Calculate luminance to convert to grayscale.
-								real R = tempVec[0] / 255.0;
-								real G = tempVec[1] / 255.0;
-								real B = tempVec[2] / 255.0;
-								real Y = (R * 0.299 + G * 0.587 + B * 0.114);
-								element.push_back(Y * 255.0);
-								tempVec.clear();
-							}
-							tempVec.push_back(data[i]);
-						}
-					}
-				}
-			}
-		}
-
-		return Matrix(hgt, wdt, element);
-	}
-
-	Matrix csvread(std::string filename)
-	{
-		std::vector<real> element;
-		std::ifstream file1 (filename, std::ios::in);
-		std::string buff = "";
-		int r = 0;
-		int c = 0;
-		while (std::getline(file1, buff))
-		{			
-			while (buff[0] < '0' || buff[0] > 'z')
-				buff = buff.substr(1);
-			while (buff[buff.length() - 1] < '0' || buff[buff.length() - 1] > 'z')
-				buff = buff.substr(0, buff.length() - 1);
-			std::vector<real> temp = ParseNInputNumbers(buff);
-			if (temp.size() > c)
-				c = temp.size();
-			element.insert(std::end(element), std::begin(temp), std::end(temp));
-			r++;
-		}
-		return Matrix(r, c, element);
+		return Matrix(rows, columns, output);
 	}
 
 	Matrix convolve(Matrix kernel, Matrix img)

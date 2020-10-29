@@ -5,6 +5,7 @@
 #include "Polynomial.h"
 #include "Matrix.h"
 #include "ImageProcessing.h"
+#include "FileIO.h"
 #include <iostream>
 #include <ctime>
 
@@ -706,11 +707,21 @@ namespace MathParser
 	{
 		// Test 1: load .bmp file, then apply Gaussian blur filter and save results to file.
 		Matrix bwImg = imread("cat.bmp");
-		Matrix kernel = GaussianKernel2D(5, 1);
-		Matrix Mat2 = convolve(kernel, bwImg);
-		Mat2.transpose();
-		imwrite("test1.bmp", Mat2, 24);
+		//Matrix bwImg = imread("test1.bmp");
+		//Matrix kernel = GaussianKernel2D(5, 1);
+		//Matrix Mat2 = convolve(kernel, bwImg);		
+		//Mat2.transpose();
+		imwrite("test1.bmp", bwImg, 24);
 		//BMPtoText("test1.bmp");//also do hex dump of file.
+
+		// Test PPM file I/O.
+		Matrix ppm = imread("cat.ppm");
+		//Matrix ppm = imread("test1.ppm");
+		imwrite("test1.ppm", ppm, 24);
+
+		// Test TGA file I/O.
+		Matrix tga = imread("cat.tga");
+		imwrite("test1.tga", tga, 24);
 
 		// Test 2:
 		//Matrix Mat = testMatrix();

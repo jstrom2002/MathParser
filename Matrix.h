@@ -227,8 +227,6 @@ namespace MathParser
 	Matrix vconcat(Matrix A, Matrix B);
 	Matrix convolve(Matrix& kernel, Matrix& B);
 	Matrix crossCorrelation(Matrix A, Matrix B);
-	Matrix csvread(std::string filename);
-	void csvwrite(std::string filename, Matrix& M);
 	Matrix directionMatrix(Vector v);
 	Matrix HadamardProduct(Matrix A, Matrix B);
 	Matrix eye(int n);

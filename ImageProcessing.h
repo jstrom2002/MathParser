@@ -9,6 +9,8 @@ namespace MathParser
 	class Matrix;
 	class Vector;
 
+	real convertRGBtoGray(std::vector<real> rgb);
+	std::vector<real> convertGrayToRGB(real gray);
 	Matrix identityFilter(unsigned int sz);
 	Matrix sharpeningFilter(unsigned int sz);
 	Matrix edgeDetectorFilter(unsigned int sz);

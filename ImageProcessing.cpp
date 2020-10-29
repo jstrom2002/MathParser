@@ -6,6 +6,18 @@
 
 namespace MathParser
 {
+	real convertRGBtoGray(std::vector<real> rgb)
+	{
+		return (0.299 * rgb[0] + 0.587 * rgb[1] + 0.114 * rgb[2]);
+	}
+
+	std::vector<real> convertGrayToRGB(real gray)
+	{
+		std::vector<real> vals = std::vector<real>{ real(gray/0.299), 
+			real(gray/0.587), real(gray/0.114) };
+		return vals;
+	}
+
 	Matrix identityFilter(unsigned int sz)
 	{
 		if (sz % 2 == 0) //filters must be of odd size
