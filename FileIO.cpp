@@ -86,74 +86,74 @@ namespace MathParser
 		if (!f)//If file does not exist, return.
 			return;
 
-		int numberOfBytes = 0;
-		int reservedBytes = 0;
-		int headerSize = 0;
-		int colorDepth = 0;
+		// Read BMP header data -- 14 bytes.
+		unsigned char bm[2] = { 0,0 };//File type ID, should be "BM".	
+		uint32_t numberOfBytes, reservedBytes, headerSize;
+		fread(bm, sizeof(unsigned char), 2, f);
+		if (bm[0] != 'B' || bm[1] != 'M')
+			return;
+		fread(&numberOfBytes, sizeof(uint32_t), 1, f);
+		fread(&reservedBytes, sizeof(uint32_t), 1, f);
+		fread(&headerSize, sizeof(uint32_t), 1, f);
 
-		//read preliminary file data -- 14 bytes
-		std::vector<unsigned char> header;
-		unsigned char prelimData[14];
-		fread(prelimData, sizeof(unsigned char), 14, f);
-		for (int i = 0; i < 14; ++i)
-			header.push_back(prelimData[i]);
-		numberOfBytes = (header[5] << 24) ^ (header[4] << 16) ^ (header[3] << 8) ^ header[2];//read number of bytes in file
-		reservedBytes = (header[9] << 24) ^ (header[8] << 16) ^ (header[7] << 8) ^ header[6];//read reserved data
-		headerSize = (header[13] << 24) ^ (header[12] << 16) ^ (header[11] << 8) ^ header[10];//read starting address
-
-		//read and interpret file header data
-		unsigned char* headerData = new unsigned char[headerSize - 14];
-		fread(headerData, sizeof(unsigned char), headerSize - 14, f);//read the 54-byte header
-		for (int i = 0; i < headerSize - 14; ++i)
-			header.push_back(headerData[i]);
-		delete[] headerData;
-
-		//initialize class variables;
-		int DIBheaderSize = (header[17] << 24) ^ (header[16] << 16) ^ (header[15] << 8) ^ header[14];
-		*cols = (header[21] << 24) ^ (header[20] << 16) ^ (header[19] << 8) ^ header[18];
-		*rows = (header[25] << 24) ^ (header[24] << 16) ^ (header[23] << 8) ^ header[22];
-		int numberOfPlanes = (header[27] << 8) ^ header[26];
-		colorDepth = (header[29] << 8) ^ header[28]; //read color depth to determine color array
-		int compression = (header[33] << 24) ^ (header[32] << 16) ^ (header[31] << 8) ^ header[30];
-		int dataSizeWPadding = (header[37] << 24) ^ (header[36] << 16) ^ (header[35] << 8) ^ header[34];
-		int pixelsPerMeterX = (header[41] << 24) ^ (header[40] << 16) ^ (header[39] << 8) ^ header[38];
-		int pixelsPerMeterY = (header[45] << 24) ^ (header[44] << 16) ^ (header[43] << 8) ^ header[42];
-		int numberColorsInPalatte = (header[49] << 24) ^ (header[48] << 16) ^ (header[47] << 8) ^ header[46];
-		int significantColors = (header[53] << 24) ^ (header[52] << 16) ^ (header[51] << 8) ^ header[50];
+		// Read file info header data -- 40 bytes.
+		uint32_t DIBheaderSize, compression, dataSizeWPadding, pixelsPerMeterX, 
+			pixelsPerMeterY, numberColorsInPalatte, significantColors;
+		uint16_t numberOfPlanes, colorDepth;
+		fread(&DIBheaderSize, sizeof(uint32_t), 1, f);
+		fread(cols, sizeof(uint32_t), 1, f);
+		fread(rows, sizeof(uint32_t), 1, f);
+		fread(&numberOfPlanes, sizeof(uint16_t), 1, f);
+		fread(&colorDepth, sizeof(uint16_t), 1, f);
+		fread(&compression, sizeof(uint32_t), 1, f);
+		fread(&dataSizeWPadding, sizeof(uint32_t), 1, f);
+		fread(&pixelsPerMeterX, sizeof(uint32_t), 1, f);
+		fread(&pixelsPerMeterY, sizeof(uint32_t), 1, f);
+		fread(&numberColorsInPalatte, sizeof(uint32_t), 1, f);
+		fread(&significantColors, sizeof(uint32_t), 1, f);
 
 		// Find out # of padding bits in a row.
-		int padBits = (4 - ((*cols * 3) % 4)) % 4;
-		int rowSize = *cols + padBits / (colorDepth / 8);
+		int padPixels = (4 - ((*cols * 3) % 4)) % 4;//# bytes to add to make row length mod 4.
+		int rowSize = *cols + padPixels;//new # bytes in row w/ padding.
 
 		// Now that the header has been read, load all subsequent bytes.
 		std::vector<unsigned char> data(dataSizeWPadding, 0);
 		fread(data.data(), sizeof(unsigned char), dataSizeWPadding, f);
 		fclose(f);
 
+		int padding = 0;
 		if (colorDepth == 8)// If already grayscale, just copy array of data to element array.
 		{
 			for (int i = 0; i < data.size(); ++i)
 				pixels->push_back(data[i]);
 		}
-		else// Else, convert to grayscale.
+
+		// Else, convert to grayscale.
+		else
 		{
-			int pixelCount = 0;//counts the number of pixel vectors read
 			std::vector<unsigned char> tempVec;
-			if (colorDepth == 24)
+			for (int i = 0; i < data.size(); ++i) 
 			{
-				for (int i = 0; i < data.size(); ++i) {
-					if ((i % rowSize) < (rowSize - padBits / (colorDepth / 8)))
-					{
-						tempVec.push_back(data[i]);
-					}
-					if (tempVec.size() >= 3 && i % 3 == 0)
-					{	// Calculate luminance to convert to grayscale.
-						std::vector<real> vals = std::vector<real>{ real(tempVec[0]),
-							real(tempVec[1]), real(tempVec[2]) };
-						pixels->push_back(convertRGBtoGray(vals));
-						tempVec.clear();
-					}
+				// If at a padding byte, skip ahead.
+				int mod_idx = i % ((rowSize * (colorDepth / 8))-padPixels);
+				if (i>0 && mod_idx == 0){
+					padding += padPixels;
+					i += padPixels;
 				}
+
+				// Save current pixel data.
+				tempVec.push_back(data[i]);
+
+				if (tempVec.size() >= 3)
+				{	// Calculate luminance to convert to grayscale.
+					Vector vals(std::vector<real>{ 
+						static_cast<real>(tempVec[0]),
+						static_cast<real>(tempVec[1]),
+						static_cast<real>(tempVec[2])
+					});
+					pixels->push_back(convertRGBtoGray(vals));
+					tempVec.erase(tempVec.begin(), tempVec.begin()+3);
+				}				
 			}
 		}
 	}
@@ -333,11 +333,11 @@ namespace MathParser
 		std::vector<real>* pixels)
 	{
 		FILE* f = fopen(filename.c_str(), "wb");
-		int padBits = (4 - ((cols * 3) % 4)) % 4;
-		int padPixels = padBits / (colorDepth / 8);//assumes colorDepth is bits per pixel, ie 24-bit.
+		int padPixels = (4 - ((cols * 3) % 4)) % 4;//# bytes to add to make row length mod 4.
+		int rowSize = cols + padPixels;
 
 		// Write first 14 byte BMP ID header.
-		uint32_t fileBytes = (cols + padPixels) * rows + 14 + 40;
+		uint32_t fileBytes = (rowSize * rows * (colorDepth/8)) + 14 + 40;
 		uint32_t offsetToData = 14 + 40;
 		uint32_t dummy = 0;
 		unsigned char BMPheader[14] = {
@@ -349,9 +349,8 @@ namespace MathParser
 		fwrite(BMPheader, sizeof(unsigned char), 14, f);
 
 		// Write 40 byte DIB header.
-		uint32_t bmpSize = rows * (cols + padPixels);
-		unsigned char DIBheader[40] =
-		{
+		uint32_t bmpSize = rows * rowSize * (colorDepth / 8);
+		unsigned char DIBheader[40] = {
 			40, 0, 0, 0,
 			(cols), (cols >> 8), (cols >> 16), (cols >> 24),
 			(rows), (rows >> 8), (rows >> 16), (rows >> 24),
@@ -367,34 +366,42 @@ namespace MathParser
 
 		//write pixel data.
 		unsigned char val0 = 0;
-		int counter = 0;
-		for (int i = 0; i < rows; i++)
+		unsigned char temp[3] = { 0,0,0 };
+		int writtenBytes = 0;
+		int writtenPadBytes = 0;
+		std::vector<unsigned char> bytes;
+		for (int i = 0; i < pixels->size(); i++)
 		{
-			for (int j = 0; j <= cols; j++)
+			//Handle writing of padding bytes.
+			if (i%cols==0)
 			{
-				if (j < cols)
-				{
-					// Convert back from Gray to RGB and write pixels to file.
-					real val = (*pixels)[i * cols + j];
-					Vector rgb = convertGrayToRGB(val);
-					fwrite(rgb.get()->data(), sizeof(unsigned char), 3, f);
-					counter += 3;
-				}
-				else
-				{
-					for (int n = 0; n < padBits; ++n)
-						fwrite(&val0, 1, 1, f);
-					counter += padBits;
-				}
-			}
+				fwrite(&val0, 1, padPixels, f);
+				writtenBytes += padPixels;
+				writtenPadBytes += padPixels;
+			}			
+				
+			// Convert back from Gray to RGB and write pixels to file.
+			Vector rgb = convertGrayToRGB((*pixels)[i]);
+			temp[0] = static_cast<unsigned char>(rgb[0]);
+			temp[1] = static_cast<unsigned char>(rgb[1]);
+			temp[2] = static_cast<unsigned char>(rgb[2]);
+			fwrite(temp, sizeof(unsigned char), 3, f);
+			bytes.push_back(temp[0]);
+			bytes.push_back(temp[1]);
+			bytes.push_back(temp[2]);
+			writtenBytes += 3;				
 		}
 
-		// Write values to array as necessary.
-		while (counter < (rows * (cols + padPixels)))
+		// Write null values to add missing data for a quick fix.
+		int errorBytes = 0;
+		while (writtenPadBytes < padPixels*rows)
 		{
 			fwrite(&val0, 1, 1, f);
-			counter++;
+			writtenBytes++;
+			writtenPadBytes++;
+			errorBytes++;
 		}
+
 		fclose(f);
 	}
 

@@ -70,7 +70,7 @@ namespace MathParser
 	{
 		real biggest = 0;
 		for (int i = 0; i < coefficient.size(); ++i) {
-			if (fabsf(coefficient[i]) > biggest) { biggest = abs(coefficient[i]); }
+			if (fabsf(coefficient[i]) > biggest) { biggest = std::abs(coefficient[i]); }
 		}
 		return biggest;
 	}
@@ -111,7 +111,7 @@ namespace MathParser
 			x1 = x - f / dfdx;
 		}
 		
-		if (abs(x - x1) < epsilon) 
+		if (std::abs(x - x1) < epsilon) 
 			return x1;
 
 		return 0;
@@ -439,7 +439,7 @@ namespace MathParser
 			dfdx = deriv.evaluate(x); //Derivative of the function
 			x1 = x - f / dfdx; //Newton Method formula
 		}
-		if (abs(x - x1) < epsilon) { //checks if guesses are within a certain tolerance value 
+		if (std::abs(x - x1) < epsilon) { //checks if guesses are within a certain tolerance value 
 			return x1;
 		}
 
@@ -713,7 +713,7 @@ namespace MathParser
 			dfdx = deriv.evaluate(x); //Derivative of the function
 			x1 = x - f / dfdx; //Newton Method formula
 		}
-		if (abs(x - x1) < epsilon) { //checks if guesses are within a certain tolerance value 
+		if (std::abs(x - x1) < epsilon) { //checks if guesses are within a certain tolerance value 
 			return x1;
 		}
 
@@ -724,12 +724,16 @@ namespace MathParser
 																		   //given a set of bounds for a polynomial, this method will find the first root
 		Polynomial p(coefficient);
 
-		if (p.coefficient.size() <= 1) { return 0; }
-		if (p.coefficient.size() == 2) { return (-p.coefficient[0] / p.coefficient[1]); }
+		if (p.coefficient.size() <= 1) 
+			return 0;
+		if (p.coefficient.size() == 2) 
+			return (-p.coefficient[0] / p.coefficient[1]);
 		if (p.coefficient.size() == 3) {
 			real part1 = std::pow(p.coefficient[1], 2) - (4 * p.coefficient[0] * p.coefficient[2]);
-			if (part1 >= 0) { return ((-p.coefficient[1] + sqrt(part1)) / (2 * p.coefficient[2])); }
-			else { return 0; }
+			if (part1 >= 0) 
+				return ((-p.coefficient[1] + sqrt(part1)) / (2 * p.coefficient[2]));
+			else 
+				return 0;
 		}
 
 		//else, p is of order 3 or higher....
@@ -826,7 +830,7 @@ namespace MathParser
 			dfdx = deriv.evaluate(x); //Derivative of the function
 			x1 = x - f / dfdx; //Newton Method formula
 		}
-		if (abs(x - x1) < epsilon) { //checks if guesses are within a certain tolerance value 
+		if (std::abs(x - x1) < epsilon) { //checks if guesses are within a certain tolerance value 
 			return x1;
 		}
 

@@ -1425,7 +1425,7 @@ namespace MathParser
 			return m;
 		for (int i = 0; i < rows; ++i) {
 			real temp = element[i * columns + n];
-			if (abs(temp) > m) { m = temp; }
+			if (std::abs(temp) > m) { m = temp; }
 		}
 		return m;
 	}
@@ -1447,7 +1447,7 @@ namespace MathParser
 			return m;
 		for (int i = 1; i < rows; ++i) {
 			real temp = element[i * columns + n];
-			if (abs(temp) < m) { m = temp; }
+			if (std::abs(temp) < m) { m = temp; }
 		}
 		return m;
 	}
@@ -1468,7 +1468,7 @@ namespace MathParser
 			return m;
 		for (int i = 0; i < columns; ++i) {
 			real temp = element[n * columns + i];
-			if (abs(temp) > m) { m = temp; }
+			if (std::abs(temp) > m) { m = temp; }
 		}
 		return m;
 	}
@@ -1488,7 +1488,7 @@ namespace MathParser
 		if (columns <= 1) { return m; }
 		for (int i = 0; i < columns; ++i) {
 			real temp = element[n * columns + i];
-			if (abs(temp) < m) { m = temp; }
+			if (std::abs(temp) < m) { m = temp; }
 		}
 		return m;
 	}
@@ -1526,7 +1526,7 @@ namespace MathParser
 	int Matrix::getPivot(int rw) {
 		int val = 0;
 		while (val < columns) {
-			if (abs(element[rw * columns + val]) > 0) {
+			if (std::abs(element[rw * columns + val]) > 0) {
 				return val;
 			}
 			++val;
@@ -1537,7 +1537,7 @@ namespace MathParser
 	int Matrix::getReversePivot(int rw) {
 		int val = columns - 1;
 		while (val >= 0) {
-			if (abs(element[rw * columns + val]) > 0) {
+			if (std::abs(element[rw * columns + val]) > 0) {
 				return val;
 			}
 			--val;
@@ -1560,7 +1560,7 @@ namespace MathParser
 			if (ind >= 0) {
 				piv = m(i, ind);
 				//normalize pivot row so pivot = 1
-				if (piv != 1 && piv != 0 && abs(piv) > 0) 
+				if (piv != 1 && piv != 0 && std::abs(piv) > 0)
 				{
 					for (int l = i; l < rows; ++l) 
 					{
@@ -1598,7 +1598,7 @@ namespace MathParser
 			if (ind >= 0) {
 				piv = m(i, ind);
 				//normalize pivot row so pivot = 1
-				if (piv != 1 && piv != 0 && abs(piv) > 0) {
+				if (piv != 1 && piv != 0 && std::abs(piv) > 0) {
 					for (int l = 0; l < i; ++l) {
 						m(i, l) = m(i, l) / piv;
 					}
@@ -1633,7 +1633,7 @@ namespace MathParser
 			if (ind >= 0) {
 				piv = m(i, ind);
 				//normalize pivot row so pivot = 1
-				if (piv != 1 && piv != 0 && abs(piv) > 0) {
+				if (piv != 1 && piv != 0 && std::abs(piv) > 0) {
 					for (int l = i + 1; l < rows; ++l) {
 						m(i, l) = m(i, l) / piv;
 					}
@@ -1660,7 +1660,7 @@ namespace MathParser
 		int rowval = 0;
 		for (int i = 0; i < rows; ++i) {
 			real elem = sumRow(i);
-			if (abs(elem) > 0) {
+			if (std::abs(elem) > 0) {
 				++rowval;
 			}
 		}
@@ -2265,8 +2265,8 @@ namespace MathParser
 			int sign = 1;
 			if (angle < 0) 
 				sign = -1;
-			real t = sign / (abs(angle) + sqrt((angle * angle) + 1));
-			real c = 1 / sqrt((t * t) + 1);
+			real t = sign / (std::abs(angle) + std::sqrt((angle * angle) + 1));
+			real c = 1 / std::sqrt((t * t) + 1);
 			real s = t * c;
 			Matrix rot = JacobiRotationMatrix(D, p, q, c, s);
 			Matrix rotT = rot.transpose();

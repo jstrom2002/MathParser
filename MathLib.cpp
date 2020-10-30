@@ -12,16 +12,21 @@ namespace MathParser
 {
 	int sgn(real x) 
 	{
-		if (x == 0) { return 0; }
-		if (x < 0) { return -1; }
+		if (x == 0) 
+			return 0;
+		if (x < 0) 
+			return -1;
 		return 1;
 	}
 
-	int getLength(real x) {//get the number of digits in a real
-		real n = abs(x);
+	int getLength(real x) 
+	{//get the number of digits in a real
+		real n = std::abs(x);
 		int length = 0;
-		if (n < 1) { return 0; }
-		while (n > 1) {
+		if (n < 1) 
+			return 0;
+		while (n > 1) 
+		{
 			n /= 10;
 			++length;
 		}
@@ -840,7 +845,7 @@ namespace MathParser
 	bool isSquarefree(int n) 
 	{
 		if (n < 0) 
-			n = abs(n);
+			n = std::abs(n);
 
 		std::vector<highpUint> factors = divisors(n);
 		for (int i = 0; i < factors.size(); ++i) 
@@ -985,7 +990,7 @@ namespace MathParser
 		if (n == 1) 
 			return 1;
 		if (n < 0) 
-			 n = abs(n);
+			 n = std::abs(n);
 
 		int k = 0;
 		for (int i = 2; i <= n; ++i) 
@@ -1105,9 +1110,9 @@ namespace MathParser
 	}
 
 	real rect(real x) {
-		if (abs(x) == 0.5) 
+		if (std::abs(x) == 0.5) 
 			return 0.5;
-		if (abs(x) > 0.5) 
+		if (std::abs(x) > 0.5)
 			return 0;
 		return 1;
 	}
@@ -1123,8 +1128,8 @@ namespace MathParser
 
 	real tri(real x) 
 	{
-		if (abs(x) < 1) 
-			return ((1 - abs(x)));
+		if (std::abs(x) < 1)
+			return ((1 - std::abs(x)));
 		return 0;
 	}
 

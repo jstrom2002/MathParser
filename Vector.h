@@ -103,6 +103,7 @@ namespace MathParser
 		Vector divide(real q, Vector& p2);
 	};
 
+	Vector abs(Vector v);
 	real dot(Vector v1, Vector v2);
 	Vector ceil(Vector v);
 	Vector clamp(Vector v1, real min_, real max_);

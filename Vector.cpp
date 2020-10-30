@@ -75,6 +75,14 @@ namespace MathParser
 		return answer;
 	}
 
+	Vector abs(Vector v)
+	{
+		for (unsigned int i = 0; i < v.size(); ++i)		
+			v = std::abs(v[i]);
+		
+		return v;
+	}
+
 	real dot(Vector v1, Vector v2)
 	{
 		real val = 0;

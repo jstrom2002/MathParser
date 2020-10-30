@@ -758,7 +758,7 @@ namespace MathParser
 		}
 		KronodTerm *= lastbit;
 		answer *= lastbit;
-		return answer + abs(answer - KronodTerm);
+		return answer + std::abs(answer - KronodTerm);
 	}
 
 	real integrateGaussKronodQuadrature(real a, real b, Function f, Vector vals, int pos) {
@@ -792,6 +792,6 @@ namespace MathParser
 		}
 		answer *= lastbit;
 		KronodTerm *= lastbit;
-		return answer + abs(answer - KronodTerm);
+		return answer + std::abs(answer - KronodTerm);
 	}
 }
