@@ -3103,8 +3103,8 @@ namespace MathParser
 		for (int i = 0; i < rw; ++i) {
 			for (int j = 0; j < cl; ++j) {
 				ans[i * cl + j] = B.element[((i % B.rows) * B.columns) +
-					(j % B.columns)] * A.element[floor(i / B.rows) *
-					A.columns + floor(j / B.columns)];
+					(j % B.columns)] * A.element[std::floor(i / B.rows) *
+					A.columns + std::floor(j / B.columns)];
 			}
 		}
 		return Matrix(rw, cl, ans);

@@ -3,28 +3,38 @@
 #include "Vector.h"
 #include "StringUtils.h"
 #include <fstream>
+#include "Vector.h"
 
 namespace MathParser
 {
-	real convertRGBtoGray(std::vector<real> rgb)
-	{
-		return (0.299 * rgb[0] + 0.587 * rgb[1] + 0.114 * rgb[2]);
+	real convertRGBtoGray(Vector rgb)
+	{	// This function is intended to handle byte-valued data from loaded objects,
+		// hence normalization by 255. 'coef' values are gamma-corrected luminance 
+		// conversion values.
+		const real coef[3] = { 0.299 / 255.0, 0.587 / 255.0, 0.114 / 255.0 };
+		return (coef[0]*rgb[0] + coef[1]*rgb[1] + coef[2]*rgb[2]);
 	}
 
-	std::vector<real> convertGrayToRGB(real gray)
+	Vector convertGrayToRGB(real gray)
 	{
-		std::vector<real> vals = std::vector<real>{ real(gray/0.299), 
-			real(gray/0.587), real(gray/0.114) };
-		return vals;
+		// For now, this function simply returns a 3-vector of the grayscale value
+		// clamped to valid byte-range [0,255].
+		real R = gray;
+		real G = gray;	
+		real B = gray;
+		Vector rgb(std::vector<real>{ R, G, B });
+		rgb *= 255;
+		rgb = clamp(rgb, 0, 255);
+		return rgb;
 	}
 
 	Matrix identityFilter(unsigned int sz)
-	{
+	{	// Filter which, when convolved with a matrix, should not alter the image in any way.
 		if (sz % 2 == 0) //filters must be of odd size
 			return Matrix();
 
 		std::vector<real> vals(sz * sz, 0);
-		vals[floor((sz * sz) / 2)] = 1;
+		vals[std::floor((sz * sz) / 2)] = 1;
 		Matrix Mat(sz, sz, vals);
 		return Mat;
 	}
@@ -66,7 +76,7 @@ namespace MathParser
 	{
 		if (sz % 2 == 0) { return Matrix(); }//filters must be of odd size
 		std::vector<real> vals(sz * sz, 1);
-		vals[floor((sz * sz) / 2) + 1] = 1;
+		vals[std::floor((sz * sz) / 2) + 1] = 1;
 		Matrix Mat(sz, sz, vals);
 		return Mat;
 	}
@@ -110,7 +120,7 @@ namespace MathParser
 		return Mat1 * MatT;
 	}
 
-	Matrix gradientFilter(std::string type, unsigned int wrt)
+	Matrix gradientFilter(std::string type, bool dy)
 	{
 		int sz1, sz2;
 		std::vector<real> vals;
@@ -147,7 +157,7 @@ namespace MathParser
 			sz2 = 3;
 		}
 		Matrix Mat(sz1, sz2, Vector(vals));
-		if (wrt > 0)
+		if (dy)
 			Mat = Mat.transpose();
 		return Mat;
 	}

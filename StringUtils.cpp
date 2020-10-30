@@ -109,7 +109,7 @@ namespace MathParser
 	{
 		std::ostringstream out;
 		int p = precisn;
-		if (val == floor(val)) { p = 0; }
+		if (val == std::floor(val)) { p = 0; }
 		out << std::fixed;
 		out << std::setprecision(p) << val;
 		out << std::scientific;
@@ -126,7 +126,7 @@ namespace MathParser
 		strs << std::fixed << std::setprecision(prc) << z.re();
 		answer.append(strs.str());
 		prc = precision;
-		if (z.im() == floor(z.im()))
+		if (z.im() == std::floor(z.im()))
 			prc = 0;
 		if (z.im() != 0) {
 			if (z.im() < 0) {

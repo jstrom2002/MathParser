@@ -8,9 +8,34 @@
 #include <string>
 #include <cmath>
 #include <algorithm>
+#include <array>
 
 namespace MathParser
 {
+	void MergeBytes(std::array<unsigned char, 4>* pixel,
+		unsigned char* p, int bytes)
+	{
+		if (bytes == 4) {
+			(*pixel)[0] = p[2];
+			(*pixel)[1] = p[1];
+			(*pixel)[2] = p[0];
+			(*pixel)[3] = p[3];
+		}
+		else if (bytes == 3) {
+			(*pixel)[0] = p[2];
+			(*pixel)[1] = p[1];
+			(*pixel)[2] = p[0];
+			(*pixel)[3] = 255;
+		}
+		else if (bytes == 2) {
+			(*pixel)[0] = (p[1] & 0x7c) << 1;
+			(*pixel)[1] = ((p[1] & 0x03) << 6) | ((p[0] & 0xe0) >> 2);
+			(*pixel)[2] = (p[0] & 0x1f) << 3;
+			(*pixel)[3] = (p[1] & 0x80);
+		}
+	}
+
+
 	Matrix csvread(std::string filename)
 	{
 		std::vector<real> element;
@@ -36,22 +61,23 @@ namespace MathParser
 	void csvwrite(std::string filename, Matrix& M)
 	{
 		FILE* file1 = fopen(filename.c_str(), "w");
-		while (file1)
+		if (!file1)
+			return;
+
+		for (int i = 0; i < M.rows; ++i)
 		{
-			for (int i = 0; i < M.rows; ++i)
+			for (int j = 0; j < M.columns; ++j)
 			{
-				for (int j = 0; j < M.columns; ++j)
-				{
-					if (j < M.columns - 1)
-						printf("%d,", M.element[i * M.columns + j]);
-					else if (i < M.rows - 1)
-						printf("%d\n", M.element[i * M.columns + j]);
-					else
-						printf("%d", M.element[i * M.columns + j]);
-				}
+				if (j < M.columns - 1)
+					fprintf(file1, "%f,", M(i,j));
+				else if (i < M.rows - 1)
+					fprintf(file1, "%f\n", M(i, j));
+				else
+					fprintf(file1, "%f", M(i, j));
 			}
-			fclose(file1);
 		}
+		
+		fclose(file1);
 	}
 
 	void loadBMP(std::string filename, int* rows, int* cols, std::vector<real>* pixels)
@@ -122,8 +148,8 @@ namespace MathParser
 					}
 					if (tempVec.size() >= 3 && i % 3 == 0)
 					{	// Calculate luminance to convert to grayscale.
-						std::vector<real> vals = std::vector<real>{ real(tempVec[2]),
-							real(tempVec[1]), real(tempVec[0]) };
+						std::vector<real> vals = std::vector<real>{ real(tempVec[0]),
+							real(tempVec[1]), real(tempVec[2]) };
 						pixels->push_back(convertRGBtoGray(vals));
 						tempVec.clear();
 					}
@@ -182,7 +208,7 @@ namespace MathParser
 		int sz = 3 * (*cols) * (*rows);
 		std::vector<unsigned char> px(sz, 0);
 		fread(px.data(), 1, sz, f);
-		for(int i=0; i<sz; ++i)
+		for(int i=0; i<sz; i+=3)
 		{
 			std::vector<real> rls = std::vector<real>{ real(px[i+0]),
 				real(px[i+1]), real(px[i+2]) };
@@ -196,34 +222,111 @@ namespace MathParser
 		FILE* f = fopen(filename.c_str(), "rb");
 		if (!f)//If file does not exist, return.
 			return;
+		
+		/*  TGA Data Type Codes:
+			See: http://www.paulbourke.net/dataformats/tga/
+			0  -  No image data included.
+			1  -  Uncompressed, color-mapped images.
+			2  -  Uncompressed, RGB images.
+			3  -  Uncompressed, black and white images.
+			9  -  Runlength encoded color-mapped images.
+		   10  -  Runlength encoded RGB images.
+		   11  -  Compressed, black and white images.
+		   32  -  Compressed color-mapped data, using Huffman, Delta, and
+				  runlength encoding.
+		   33  -  Compressed color-mapped data, using Huffman, Delta, and
+				  runlength encoding.  4-pass quadtree-type process.	*/
 
-		// Get info from header.
+		// Get TGA format header.
 		unsigned char TGAheader[12];
-		unsigned char header[6];
 		fread(TGAheader, sizeof(unsigned char), 12, f);
+		char idlength = TGAheader[0];
+		char colourmaptype = TGAheader[1];
+		char datatypecode = TGAheader[2];
+		
+		// This function can only handle image type 2 and 10 for now.
+		if (datatypecode != 2 && datatypecode != 10)
+			return;	
+
+		int colourmaporigin = (TGAheader[4] << 8) ^ TGAheader[3];
+		int colourmaplength = (TGAheader[6] << 8) ^ TGAheader[5];
+		char colourmapdepth = TGAheader[7];
+		int x_origin = (TGAheader[9] << 8) ^ TGAheader[8];
+		int y_origin = (TGAheader[11] << 8) ^ TGAheader[10];
+
+		// Get info format header.
+		unsigned char header[6];
 		fread(header, sizeof(unsigned char), 6, f);
 		*cols = (header[1] << 8) ^ header[0];
 		*rows = (header[3] << 8) ^ header[2];
 		int colorDepth = header[4];
+		int bytesPerPixel = (colorDepth / 8);
+		int imagedescriptor = header[5];
 
-		// Now read pixel data.
-		std::vector<unsigned char> temp;
-		int nSize = (*rows) * (*cols) * (colorDepth / 8);
-		temp.resize(nSize, 0);
-		fread(temp.data(), sizeof(unsigned char), nSize, f);
+		// Read the image. This code borrowed from Paul Bourke at:
+		// http://www.paulbourke.net/dataformats/tga/tgatest.c.
+		int bytes2read = bytesPerPixel;
+		unsigned char p[5];
+		int n = 0;
+		int i = 0;
+		int j = 0;
+		std::vector<std::array<unsigned char, 4>> temp(*rows * *cols);
+		while (n < (*cols) * (*rows)) {
+			if (datatypecode == 2) {/* Uncompressed */
+				if (fread(p, 1, bytes2read, f) != bytes2read) {
+					fprintf(stderr, "Unexpected end of file at pixel %d\n", i);
+					return;
+				}
+				MergeBytes(&temp[n], p, bytes2read);
+				n++;
+			}
+			else if (datatypecode == 10) {/* Compressed */
+				if (fread(p, 1, bytes2read + 1, f) != bytes2read + 1) {
+					fprintf(stderr, "Unexpected end of file at pixel %d\n", i);
+					return;
+				}
+				j = p[0] & 0x7f;
+				MergeBytes(&(temp[n]), &(p[1]), bytes2read);
+				n++;
+				if (p[0] & 0x80) {/* RLE chunk */
+					for (i = 0; i < j; i++) {
+						MergeBytes(&(temp[n]), &(p[1]), bytes2read);
+						n++;
+					}
+				}
+				else { /* Normal chunk */
+					for (i = 0; i < j; i++) {
+						if (fread(p, 1, bytes2read, f) != bytes2read) {
+							fprintf(stderr, "Unexpected end of file at pixel %d\n", i);
+							return;
+						}
+						MergeBytes(&(temp[n]), p, bytes2read);
+						n++;
+					}
+				}
+			}
+		}
+		fclose(f);
 
 		// Copy pixel data to array.
-		for (int i = 0; i < nSize - (colorDepth / 8); i += (colorDepth / 8))
+		for (int idx = 0; idx < temp.size(); idx++)
 		{
-			if ((colorDepth / 8) == 1)
-				pixels->push_back(temp[i]);
-			else if ((colorDepth / 8) == 3 || (colorDepth / 8) == 4)
+			if (bytesPerPixel == 1)
+				pixels->push_back(static_cast<real>(temp[i][0]));
+			else if (bytesPerPixel == 3 || bytesPerPixel == 4)
 			{
-				std::vector<real> vec = std::vector<real>{ real(temp[i + 2]), 
-					real(temp[i + 1]), real(temp[i + 0]) };
+				std::vector<real> vec = std::vector<real>
+				{ 
+					static_cast<real>(temp[idx][0]),
+					static_cast<real>(temp[idx][1]),
+					static_cast<real>(temp[idx][2])
+				};
 				pixels->push_back(convertRGBtoGray(vec));
 			}
 		}
+
+		temp.clear();
+		fclose(f);
 	}
 
 	void saveBMP(std::string filename, int rows, int cols, int colorDepth,
@@ -273,8 +376,8 @@ namespace MathParser
 				{
 					// Convert back from Gray to RGB and write pixels to file.
 					real val = (*pixels)[i * cols + j];
-					std::vector<real> rgb = convertGrayToRGB(val);
-					fwrite(rgb.data(), sizeof(unsigned char), 3, f);
+					Vector rgb = convertGrayToRGB(val);
+					fwrite(rgb.get()->data(), sizeof(unsigned char), 3, f);
 					counter += 3;
 				}
 				else
@@ -298,53 +401,44 @@ namespace MathParser
 	void savePPM(std::string filename, int rows, int cols, int colorDepth,
 		std::vector<real>* pixels)
 	{
-		FILE* f = fopen(filename.c_str(), "wb");
+		std::ofstream ofile(filename, std::ios::out | std::ios::binary);
+		if (!ofile.is_open()) 
+			return;		
 
-		// Somewhat clumsy gathering of header values into a char array for writing.
-		std::vector<char> PPMheader = { 'P', '6', '\n' };
-		
-		std::string colstr = std::to_string(cols) + " ";
-		std::vector<char> colstr2(colstr.begin(), colstr.end());
-		//std::reverse(colstr2.begin(), colstr2.end());//reverse byte order.
-
-		std::string rowstr = std::to_string(rows) + "\n";
-		std::vector<char> rowstr2(rowstr.begin(), rowstr.end());
-		//std::reverse(rowstr2.begin(), rowstr2.end());//reverse order of bytes.
-
-		std::vector<char> maxval{'2', '5', '5'};
-		PPMheader.insert(std::end(PPMheader), std::begin(colstr2), std::end(colstr2));
-		PPMheader.insert(std::end(PPMheader), std::begin(rowstr2), std::end(rowstr2));
-		PPMheader.insert(std::end(PPMheader), std::begin(maxval), std::end(maxval));
-
-		// Write header.
-		fwrite(PPMheader.data(), sizeof(unsigned char), PPMheader.size(), f);
-
-		// Convert reals to bytes. PPM files are only RGB valued pixels.
-		size_t sz = rows * cols;
-		std::vector<unsigned char> temp(sz * 3, 0);
-		for (int i = 0; i < pixels->size(); ++i)
-			temp[i] = (*pixels)[i];
-		fwrite(temp.data(), sizeof(unsigned char), sz * 3, f);
-		fclose(f);
+		ofile << "P6" << "\n";
+		ofile << cols << " ";
+		ofile << rows << "\n";
+		ofile << "255" << "\n";
+		void* img = (void*)pixels->data(); 
+		unsigned char* temp = new unsigned char[pixels->size()*3];
+		for (int i = 0; i < pixels->size(); i++) 
+		{
+			// Convert gray->RGB, then swap bytes from RGB->BGR.
+			Vector val = convertGrayToRGB((*pixels)[i]);
+			temp[i*3+0] = static_cast<unsigned char>(val[0]);
+			temp[i*3+1] = static_cast<unsigned char>(val[1]);
+			temp[i*3+2] = static_cast<unsigned char>(val[2]);
+		}
+		ofile.write((char*)temp, pixels->size()*3);
+		delete[] temp;
+		ofile.close();
 	}
 
 	void saveTGA(std::string filename, int rows, int cols, int colorDepth,
 		std::vector<real>* pixels)
 	{
 		FILE* f = fopen(filename.c_str(), "wb");
-		int nSize = cols * rows * 3;
 
 		// Transfer elements to pixel array.
-		for (int i = 0; i < rows; i++)
-			for (int j = 0; j < cols; j++)
-			{
-				// Convert back from Gray to RGB and write pixels to file.
-				real val = (*pixels)[i * cols + j];
-				std::vector<real> rgb = convertGrayToRGB(val);
-				pixels->push_back(rgb[2]);//convert to BGR.
-				pixels->push_back(rgb[1]);
-				pixels->push_back(rgb[0]);
-			}
+		std::vector<unsigned char> temp(pixels->size() * 3, 0);
+		for (int i = 0; i < pixels->size(); i++)
+		{
+			// Convert back from Gray to RGB and write pixels to file.
+			Vector val = convertGrayToRGB((*pixels)[i]);
+			temp[i * 3 + 0] = static_cast<unsigned char>(val[0]);
+			temp[i * 3 + 1] = static_cast<unsigned char>(val[1]);
+			temp[i * 3 + 2] = static_cast<unsigned char>(val[2]);
+		}
 
 		// Make headers, write all to file.
 		unsigned char TGAheader[12] = { 0,0,2,0,0,0,0,0,0,0,0,0 };
@@ -352,7 +446,7 @@ namespace MathParser
 			rows % 256, rows / 256, colorDepth, 0 };
 		fwrite(TGAheader, sizeof(unsigned char), 12, f);
 		fwrite(header, sizeof(unsigned char), 6, f);
-		fwrite(pixels->data(), sizeof(unsigned char), nSize, f);	
+		fwrite(temp.data(), sizeof(unsigned char), temp.size(), f);
 		fclose(f);
 	}
 }

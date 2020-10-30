@@ -541,16 +541,16 @@ namespace MathParser
 		}
 
 		real answer = 0;
-		epsilon = pow(10, -1 * (7 - getLength(x) - D));
-		real lastbit = (1 / pow(epsilon, D));
+		epsilon = std::pow(10, -1 * (7 - getLength(x) - D));
+		real lastbit = (1 / std::pow(epsilon, D));
 
-		if (D != floor(D)) {//fractional derivative.
+		if (D != std::floor(D)) {//fractional derivative.
 			epsilon = 0.01;
 			real derivs = (x / epsilon);
-			lastbit = (1 / pow(epsilon, D));
+			lastbit = (1 / std::pow(epsilon, D));
 			for (real i = 0; i <= derivs; ++i) {
 				//From limit def derivative.
-				real temp = pow(-1, i) * (tgamma(D + 1) / 
+				real temp = std::pow(-1, i) * (tgamma(D + 1) /
 					(factorial(i) * tgamma(D + 1 - i))) * 
 					(f.evaluate((x + ((D / 2) - i) * epsilon)));   
 				answer += temp;
@@ -562,7 +562,7 @@ namespace MathParser
 		//From limit def derivative.
 		for (int i = 0; i <= D; ++i) {
 			real temp = pow(-1, i) * combination(D, i) * 
-				(f.evaluate((x + ((ceil(D / 2) - i) * epsilon))));   
+				(f.evaluate((x + ((std::ceil(D / 2.0) - i) * epsilon))));   
 			answer += temp;
 		}
 		answer *= lastbit;
@@ -573,7 +573,8 @@ namespace MathParser
 		highp epsilon) 
 	{ //where D is the number of derivatives to take, 
 	  //wrt is the index of the differentiating variable.
-		if (D == 0) { return f.evaluate(x); }
+		if (D == 0) 
+			return f.evaluate(x);
 		if (D == 1) {
 			epsilon = pow(10, -1 * (9 - D));
 			Vector x2 = x;
@@ -584,15 +585,15 @@ namespace MathParser
 
 		real answer = 0;
 		epsilon = pow(10, -1 * (9 - D));
-		real lastbit = (1 / pow(epsilon, D));
+		real lastbit = (1 / std::pow(epsilon, D));
 
-		if (D != floor(D)) {	//fractional derivative
+		if (D != std::floor(D)) {	//fractional derivative
 			real derivs = (x[wrt] / epsilon);
 			while (derivs > 100) { derivs /= 10; }
 			for (real i = 0; i <= derivs; ++i) {
 				Vector x2 = x;
-				x2[wrt] += ((ceil(D / 2) - i) * epsilon);
-				real temp = pow(-1, i) * (tgamma(D + 1) / (factorial(i) * 
+				x2[wrt] += ((std::ceil(D / 2) - i) * epsilon);
+				real temp = std::pow(-1, i) * (tgamma(D + 1) / (factorial(i) *
 					tgamma(D = 1 - i))) * (f.evaluate(x2));//limit def derivative
 				answer += temp;
 			}
@@ -602,9 +603,9 @@ namespace MathParser
 
 		for (int i = 0; i <= D; ++i) {
 			Vector x2 = x;
-			x2[wrt] += ((ceil(D / 2) - i) * epsilon);
+			x2[wrt] += ((std::ceil(D / 2) - i) * epsilon);
 			// Limit def derivative.
-			real temp = pow(-1, i) * combination(D, i) * (f.evaluate(x2));
+			real temp = std::pow(-1, i) * combination(D, i) * (f.evaluate(x2));
 			answer += temp;
 		}
 		answer *= lastbit;

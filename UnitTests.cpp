@@ -643,13 +643,14 @@ namespace MathParser
 			4, 5, 6,
 			7, 8, 9,
 		};
-		Matrix M1 = csvread("test.csv");
-		Matrix M2(3, 3, p1);
+		Matrix M1(3, 3, p1);
+		csvwrite("data/test.csv", M1);
+		Matrix M2 = csvread("data/test.csv");
 
 		if (M1 != M2)
 		{
-			std::cout << "test result: " << M1.to_string() << std::endl;
-			std::cout << "expected result: " << M2.to_string() << std::endl;
+			//std::cout << "test result: " << M2.to_string() << std::endl;
+			//std::cout << "expected result: " << M1.to_string() << std::endl;
 			return false;
 		}
 
@@ -705,27 +706,23 @@ namespace MathParser
 
 	bool UnitTests::imageProcessingTest()
 	{
-		// Test 1: load .bmp file, then apply Gaussian blur filter and save results to file.
-		Matrix bwImg = imread("cat.bmp");
-		//Matrix bwImg = imread("test1.bmp");
-		//Matrix kernel = GaussianKernel2D(5, 1);
-		//Matrix Mat2 = convolve(kernel, bwImg);		
-		//Mat2.transpose();
-		imwrite("test1.bmp", bwImg, 24);
-		//BMPtoText("test1.bmp");//also do hex dump of file.
+		// Load image file to grayscale, apply blur filter and save results.		
+		Matrix kernel = GaussianKernel2D(25, 200.0);
+
+		// Test BMP file I/O.
+		Matrix bmp = imread("data/cat.bmp");
+		bmp = convolve(kernel, bmp);
+		imwrite("data/test1.bmp", bmp, 24);
 
 		// Test PPM file I/O.
-		Matrix ppm = imread("cat.ppm");
-		//Matrix ppm = imread("test1.ppm");
-		imwrite("test1.ppm", ppm, 24);
+		Matrix ppm = imread("data/cat.ppm");
+		ppm = convolve(kernel, ppm);
+		imwrite("data/test1.ppm", ppm, 24);
 
 		// Test TGA file I/O.
-		Matrix tga = imread("cat.tga");
-		imwrite("test1.tga", tga, 24);
-
-		// Test 2:
-		//Matrix Mat = testMatrix();
-		//IMAGE bmp2(Mat);
+		Matrix tga = imread("data/cat.tga");
+		tga = convolve(kernel, tga);
+		imwrite("data/test1.tga", tga, 24);
 
 		return true;
 	}

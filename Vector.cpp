@@ -11,8 +11,7 @@ namespace std
 	{
 		if (!n)//Handle case where exponent == 0.
 		{
-			std::vector<MathParser::real> vals;
-			vals.resize(v.size(),1);
+			std::vector<MathParser::real> vals(v.size(),1);
 			return MathParser::Vector(vals);
 		}
 
@@ -62,7 +61,7 @@ namespace MathParser
 		for (int i = 0; i < v.size(); ++i) {
 			if (v[i] < std::numeric_limits<real>::max() && 
 				v[i] > -std::numeric_limits<real>::max()) {
-				if (v[i] == floor(v[i])) 
+				if (v[i] == std::floor(v[i]))
 					vectorPrecision = 0;
 				else 
 					vectorPrecision = precision;
@@ -170,10 +169,9 @@ namespace MathParser
 		int sz = size();
 		real mu = mean();
 		real answer = 0;
-		for (int i = 0; i < sz; ++i) 
-		{
-			answer += pow(v[i] - mu, 2);
-		}
+		for (int i = 0; i < sz; ++i) 		
+			answer += pow(v[i] - mu, 2);		
+
 		return answer / (sz - 1);
 	}
 
@@ -185,14 +183,63 @@ namespace MathParser
 	real Vector::RMS() 
 	{
 		real answer = 0;
-		for (int i = 0; i < size(); ++i) {
+		for (int i = 0; i < size(); ++i)
 			answer += pow(v[i], 2);
-		}
+		
 		answer *= 1.0 / size();
 		return pow(answer, 0.5);
 	}
 
-	Vector Vector::add(Vector a, Vector b)
+	Vector clamp(Vector v1, real min_, real max_)
+	{
+		for (int i = 0; i < v1.size(); ++i)
+		{
+			v1[i] = (v1[i] > min_) ? v1[i] : min_;
+			v1[i] = (v1[i] < max_) ? v1[i] : max_;
+		}
+		return v1;
+	}
+
+	Vector mix(Vector a, Vector b, real t)
+	{
+		// Get smaller vector length to prevent access outside array bounds.
+		int sz = (a.size() < b.size()) ? a.size() : b.size();
+		Vector v_out;
+		v_out.resize(sz,0);
+		for (int i = 0; i < sz; ++i)
+			v_out[i] = a[i] * t + b[i] * (1.0 - t);
+		return v_out;
+	}
+
+	Vector ceil(Vector v)
+	{
+		for (int i = 0; i < v.size(); ++i)
+			v[i] = std::ceil(v[i]);
+		return v[1];
+	}
+
+	Vector floor(Vector v)
+	{
+		for (int i = 0; i < v.size(); ++i)		
+			v[i] = std::floor(v[i]);		
+		return v[1];
+	}
+
+	Vector fract(Vector v)
+	{
+		for (int i = 0; i < v.size(); ++i)
+			v[i] = v[i] - std::floor(v[i]);
+		return v[1];
+	}
+
+	Vector round(Vector v)
+	{
+		for (int i = 0; i < v.size(); ++i)
+			v[i] = std::round(v[i]);
+		return v[1];
+	}
+
+	Vector Vector::add(Vector& a, Vector& b)
 	{
 		std::vector<real> v;
 		int small_sz = a.size() < b.size() ? a.size() : b.size();
@@ -210,31 +257,27 @@ namespace MathParser
 		return Vector(v);
 	}
 
-	Vector Vector::add(Vector a, real  b)
+	Vector Vector::add(Vector& a, real  b)
 	{
-		std::vector<real> v;
 		int sz = a.size();
-		v.resize(sz);
-		for (int i = 0; i < sz; ++i)
-		{			
+		std::vector<real> v(sz,0);
+		for (int i = 0; i < sz; ++i)				
 			v[i] = a[i] + b;
-		}
+
 		return Vector(v);
 	}
 	
-	Vector Vector::add(real b, Vector a)
+	Vector Vector::add(real b, Vector& a)
 	{
-		std::vector<real> v;
 		int sz = a.size();
-		v.resize(sz);
-		for (int i = 0; i < sz; ++i)
-		{
-			v[i] = a[i] + b;
-		}
+		std::vector<real> v(sz, 0);
+		for (int i = 0; i < sz; ++i)		
+			v[i] = a[i] + b;	
+
 		return Vector(v);
 	}
 
-	Vector Vector::subtract(Vector a, Vector b)
+	Vector Vector::subtract(Vector& a, Vector& b)
 	{
 		std::vector<real> v;
 		int small_sz = a.size() < b.size() ? a.size() : b.size();
@@ -252,31 +295,27 @@ namespace MathParser
 		return Vector(v);
 	}
 
-	Vector Vector::subtract(Vector a, real  b)
+	Vector Vector::subtract(Vector& a, real  b)
 	{
-		std::vector<real> v;
 		int sz = a.size();
-		v.resize(sz);
-		for (int i = 0; i < sz; ++i)
-		{
-			v[i] = a[i] - b;
-		}
+		std::vector<real> v(sz, 0);
+		for (int i = 0; i < sz; ++i)		
+			v[i] = a[i] - b;		
+
 		return Vector(v);
 	}
 
-	Vector Vector::subtract(real b, Vector a)
+	Vector Vector::subtract(real b, Vector& a)
 	{
-		std::vector<real> v;
 		int sz = a.size();
-		v.resize(sz);
-		for (int i = 0; i < sz; ++i)
-		{
-			v[i] = a[i] - b;
-		}
+		std::vector<real> v(sz, 0);
+		for (int i = 0; i < sz; ++i)		
+			v[i] = a[i] - b;	
+
 		return Vector(v);
 	}
 
-	Vector Vector::multiply(Vector a, Vector b)
+	Vector Vector::multiply(Vector& a, Vector& b)
 	{
 		std::vector<real> v;
 		int small_sz = a.size() < b.size() ? a.size() : b.size();
@@ -294,31 +333,27 @@ namespace MathParser
 		return Vector(v);
 	}
 
-	Vector Vector::multiply(Vector a, real b)
+	Vector Vector::multiply(Vector& a, real b)
 	{
-		std::vector<real> v;
 		int sz = a.size();
-		v.resize(sz);
-		for (int i = 0; i < sz; ++i)
-		{
-			v[i] = a[i] * b;
-		}
+		std::vector<real> v(sz, 0);
+		for (int i = 0; i < sz; ++i)		
+			v[i] = a[i] * b;		
+
 		return Vector(v);
 	}
 
-	Vector Vector::multiply(real b, Vector a)
+	Vector Vector::multiply(real b, Vector& a)
 	{
-		std::vector<real> v;
 		int sz = a.size();
-		v.resize(sz);
-		for (int i = 0; i < sz; ++i)
-		{
+		std::vector<real> v(sz, 0);
+		for (int i = 0; i < sz; ++i)		
 			v[i] = a[i] * b;
-		}
+
 		return Vector(v);
 	}
 
-	Vector Vector::divide(Vector a, Vector b)
+	Vector Vector::divide(Vector& a, Vector& b)
 	{
 		std::vector<real> v;
 		int small_sz = a.size() < b.size() ? a.size() : b.size();
@@ -336,27 +371,23 @@ namespace MathParser
 		return Vector(v);
 	}
 
-	Vector Vector::divide(Vector a, real b)
+	Vector Vector::divide(Vector& a, real b)
 	{
-		std::vector<real> v;
 		int sz = a.size();
-		v.resize(sz);
-		for (int i = 0; i < sz; ++i)
-		{
-			v[i] = a[i] / b;
-		}
+		std::vector<real> v(sz, 0);
+		for (int i = 0; i < sz; ++i)		
+			v[i] = a[i] / b;		
+
 		return Vector(v);
 	}
 	
-	Vector Vector::divide(real b, Vector a)
+	Vector Vector::divide(real b, Vector& a)
 	{
-		std::vector<real> v;
 		int sz = a.size();
-		v.resize(sz);
-		for (int i = 0; i < sz; ++i)
-		{
+		std::vector<real> v(sz, 0);
+		for (int i = 0; i < sz; ++i)		
 			v[i] = a[i] / b;
-		}
+
 		return Vector(v);
 	}
 
@@ -368,16 +399,16 @@ namespace MathParser
 	Vector& Vector::operator+=(real x) { *this = *this + x; return *this; }
 	Vector& Vector::operator-=(Vector& rhs) { *this = *this - rhs; return *this; }
 	Vector& Vector::operator-=(real x) { *this = *this - x; return *this; }
-	Vector operator+(Vector lhs, Vector rhs) { return lhs.add(lhs, rhs); }
-	Vector operator+(Vector lhs, real x) { return lhs.add(lhs, x); }
-	Vector operator+(real x, Vector rhs) { return rhs.add(x, rhs); }
-	Vector operator-(Vector lhs, Vector rhs) { return lhs.subtract(lhs, rhs); }
-	Vector operator-(Vector lhs, real x) { return lhs.subtract(lhs, x); }
-	Vector operator-(real x, Vector rhs) { return rhs.subtract(x, rhs); }
-	Vector operator*(Vector lhs, Vector rhs) { return lhs.multiply(lhs, rhs); }
-	Vector operator*(Vector lhs, real x) { return lhs.multiply(lhs, x); }
-	Vector operator*(real x, Vector rhs) { return rhs.multiply(x, rhs); }
-	Vector operator/(Vector lhs, Vector rhs) { return lhs.divide(lhs, rhs); }
-	Vector operator/(Vector lhs, real x) { return lhs.divide(lhs, x); }
-	Vector operator/(real x, Vector rhs) { return rhs.divide(x, rhs); }
+	Vector operator+(Vector& lhs, Vector& rhs) { return lhs.add(lhs, rhs); }
+	Vector operator+(Vector& lhs, real x) { return lhs.add(lhs, x); }
+	Vector operator+(real x, Vector& rhs) { return rhs.add(x, rhs); }
+	Vector operator-(Vector& lhs, Vector& rhs) { return lhs.subtract(lhs, rhs); }
+	Vector operator-(Vector& lhs, real x) { return lhs.subtract(lhs, x); }
+	Vector operator-(real x, Vector& rhs) { return rhs.subtract(x, rhs); }
+	Vector operator*(Vector& lhs, Vector& rhs) { return lhs.multiply(lhs, rhs); }
+	Vector operator*(Vector& lhs, real x) { return lhs.multiply(lhs, x); }
+	Vector operator*(real x, Vector& rhs) { return rhs.multiply(x, rhs); }
+	Vector operator/(Vector& lhs, Vector& rhs) { return lhs.divide(lhs, rhs); }
+	Vector operator/(Vector& lhs, real x) { return lhs.divide(lhs, x); }
+	Vector operator/(real x, Vector& rhs) { return rhs.divide(x, rhs); }
 }

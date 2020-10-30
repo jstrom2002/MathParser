@@ -48,6 +48,7 @@ namespace MathParser
 		real operator [](int i) const { return v[i]; }
 		real& operator [](int i) { return v[i]; }
 		bool operator==(const Vector& rhs) { return v == rhs.v; }
+		bool operator!=(const Vector& rhs) { return v != rhs.v; }
 		Vector& operator*=(Vector& rhs);
 		Vector& operator*=(real x);
 		Vector& operator/=(Vector& rhs);
@@ -56,18 +57,18 @@ namespace MathParser
 		Vector& operator+=(real x);
 		Vector& operator-=(Vector& rhs);
 		Vector& operator-=(real x);
-		friend Vector operator+(Vector lhs, Vector rhs);
-		friend Vector operator+(Vector lhs, real x);
-		friend Vector operator+(real x, Vector rhs);
-		friend Vector operator-(Vector lhs, Vector rhs);
-		friend Vector operator-(Vector lhs, real x);
-		friend Vector operator-(real x, Vector rhs);
-		friend Vector operator*(Vector lhs, Vector rhs);
-		friend Vector operator*(Vector lhs, real x);
-		friend Vector operator*(real x, Vector rhs);
-		friend Vector operator/(Vector lhs, Vector rhs);
-		friend Vector operator/(Vector lhs, real x);
-		friend Vector operator/(real x, Vector rhs);
+		friend Vector operator+(Vector& lhs, Vector& rhs);
+		friend Vector operator+(Vector& lhs, real x);
+		friend Vector operator+(real x, Vector& rhs);
+		friend Vector operator-(Vector& lhs, Vector& rhs);
+		friend Vector operator-(Vector& lhs, real x);
+		friend Vector operator-(real x, Vector& rhs);
+		friend Vector operator*(Vector& lhs, Vector& rhs);
+		friend Vector operator*(Vector& lhs, real x);
+		friend Vector operator*(real x, Vector& rhs);
+		friend Vector operator/(Vector& lhs, Vector& rhs);
+		friend Vector operator/(Vector& lhs, real x);
+		friend Vector operator/(real x, Vector& rhs);
 
 		// Unique class methods.
 		std::vector<real>* get() { return &v; }
@@ -88,24 +89,30 @@ namespace MathParser
 		std::vector<real> v;
 
 		// Helper functions to reduce reusing code for operator overloads.
-		Vector add(Vector a, Vector b);
-		Vector add(Vector a, real  b);
-		Vector add(real b, Vector a);
-		Vector subtract(Vector a, Vector b);
-		Vector subtract(Vector a, real  b);
-		Vector subtract(real b, Vector a);
-		Vector multiply(Vector a, Vector b);
-		Vector multiply(Vector a, real b);
-		Vector multiply(real b, Vector a);
-		Vector divide(Vector p, Vector q);
-		Vector divide(Vector p2, real q);
-		Vector divide(real q, Vector p2);
+		Vector add(Vector& a, Vector& b);
+		Vector add(Vector& a, real  b);
+		Vector add(real b, Vector& a);
+		Vector subtract(Vector& a, Vector& b);
+		Vector subtract(Vector& a, real  b);
+		Vector subtract(real b, Vector& a);
+		Vector multiply(Vector& a, Vector& b);
+		Vector multiply(Vector& a, real b);
+		Vector multiply(real b, Vector& a);
+		Vector divide(Vector& p, Vector& q);
+		Vector divide(Vector& p2, real q);
+		Vector divide(real q, Vector& p2);
 	};
 
 	real dot(Vector v1, Vector v2);
+	Vector ceil(Vector v);
+	Vector clamp(Vector v1, real min_, real max_);
 	Vector cross(Vector v1, Vector v2);
+	Vector floor(Vector v);
+	Vector fract(Vector v);
 	real length(Vector v);
+	Vector mix(Vector a, Vector b, real t);
 	Vector normalize(Vector v);
+	Vector round(Vector v);
 }
 
 namespace std

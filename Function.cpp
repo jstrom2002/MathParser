@@ -144,7 +144,7 @@ namespace MathParser
 		}
 		else if(str.find("ceil(") != std::string::npos) {
 			real tmp = ParseInputNumber(str.substr(str.find("ceil(") + 1));
-			return ceil(tmp);
+			return std::ceil(tmp);
 		}
 		else if(str.find("cos(") != std::string::npos && str.find("acos(") == std::string::npos && 
 			str.find("cosh(") == std::string::npos) {

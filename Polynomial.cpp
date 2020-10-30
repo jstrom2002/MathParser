@@ -119,7 +119,7 @@ namespace MathParser
 
 	bool Polynomial::isIntegerValued() {
 		for (int i = 0; i < coefficient.size(); ++i) {
-			if (coefficient[i] != floor(coefficient[i])) { return false; }
+			if (coefficient[i] != std::floor(coefficient[i])) { return false; }
 		}
 		return true;
 	}
@@ -492,7 +492,7 @@ namespace MathParser
 					candidates.push_back(x);
 					lastroot = x;
 					lowbound = x + delta;
-					if (x == floor(x)) {
+					if (x == std::floor(x)) {
 						temp = temp.factorOutBinomial(x); //perform a shift to reduce the polynomial
 						bounds = temp.getRootBounds();
 						real lowbound = bounds[0];
@@ -540,8 +540,8 @@ namespace MathParser
 
 		for (int i = coefficient.size() - 1; i >= 0; i--) {
 			if (coefficient[i] != 0) {
-				if (coefficient[i] == floor(coefficient[i])) { precision = 0; }
-				if (coefficient[i] != floor(coefficient[i])) { precision = precision; }
+				if (coefficient[i] == std::floor(coefficient[i])) { precision = 0; }
+				if (coefficient[i] != std::floor(coefficient[i])) { precision = precision; }
 
 				if (i == 0) {
 					if (coefficient[i] >= 0) {
@@ -877,7 +877,7 @@ namespace MathParser
 					candidates.push_back(x);
 					lastroot = x;
 					lowbound = x + delta;
-					if (x == floor(x)) {
+					if (x == std::floor(x)) {
 						temp = temp.factorOutBinomial(x); //perform a shift to reduce the polynomial
 						bounds = temp.getRootBounds();
 						real lowbound = bounds[0];

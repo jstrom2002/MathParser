@@ -845,8 +845,8 @@ namespace MathParser
 		std::vector<highpUint> factors = divisors(n);
 		for (int i = 0; i < factors.size(); ++i) 
 		{
-			real temp = sqrt(factors[i]);
-			if (temp == floor(temp)) 
+			real temp = std::sqrt(factors[i]);
+			if (temp == std::floor(temp)) 
 				return false;
 		}
 		return true;
@@ -910,7 +910,7 @@ namespace MathParser
 			answer += ((pow(i, n)) / (real)factorial(i));
 		}
 		answer = answer * (1 / exp(1));
-		return round(answer);
+		return std::round(answer);
 	}
 
 	int StirlingNumber1stKind(int n, int k) 
@@ -992,7 +992,7 @@ namespace MathParser
 		{
 			if (n % i == 0) 
 			{
-				if (sqrt(i) == floor(sqrt(i)))
+				if (std::sqrt(i) == std::floor(std::sqrt(i)))
 					return 0;
 				
 				real test = n / i;
@@ -1138,8 +1138,8 @@ namespace MathParser
 	real squarewave(real t)
 	{
 		//by default period = 2 PI, amplitude = 1
-		int test = ceil(t / PI);
-		test %= 2;      //test to see if 0 <= t/pi < pi (i.e. amp = 1)
+		int test = std::ceil(t / PI);
+		test %= 2;//test to see if 0 <= t/pi < pi (i.e. amp = 1)
 
 		double amplitude;
 		if (test == 0)  //case: t < Pi
