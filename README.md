@@ -3,7 +3,7 @@
 
 #### This project is open-source and free for reuse and re-distribution without credit or royalty.
 
-This project is an archive of some old code I wrote years ago (around 2015) for parsing functions, doing arithmetic, etc. I've cleaned it up and added some unit tests. I've also written a simple command line interface. The code was written when I was first learning how to program, so it is presented with that in mind.
+This project is an archive of some old code I wrote years ago (around 2015) for parsing functions, doing martrix arithmetic/operations, etc. I've cleaned it up and added some unit tests. I've also written a simple command line interface. The code was written when I was first learning how to program, so it is presented with that in mind. The UI uses MATLAB syntax when possible.
 
 #### References:
 Masina, Enrico. "A Review on the Exponential-Integral Special Function and Other Strictly Related Special Functions." University of Bologna, Italy. 
