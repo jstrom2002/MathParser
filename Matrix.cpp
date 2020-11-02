@@ -498,7 +498,7 @@ namespace MathParser
 		}
 	}
 
-	Vector Matrix::findRow(Vector x) 
+	Vector Matrix::findRow(Vector& x) 
 	{
 		int index = 0;
 		bool isRow = false;
@@ -519,7 +519,7 @@ namespace MathParser
 		return row(index);
 	}
 
-	Vector Matrix::findColumn(Vector x) 
+	Vector Matrix::findColumn(Vector& x) 
 	{
 		int index = -1;
 		bool isColumn = false;
@@ -1354,7 +1354,7 @@ namespace MathParser
 		}
 	}
 
-	Matrix Matrix::directSum(Matrix A, Matrix B) {
+	Matrix Matrix::directSum(Matrix& A, Matrix& B) {
 		Matrix T = eye(A.rows + B.rows, A.columns + B.columns);
 		for (int i = 0; i < T.rows; ++i) {
 			for (int j = 0; j < T.columns; ++j) {
@@ -1964,7 +1964,7 @@ namespace MathParser
 		return M;
 	}
 
-	Matrix Matrix::addColumn(Vector vec) 
+	Matrix Matrix::addColumn(Vector& vec) 
 	{//adds to bottom of matrix by default.
 		Matrix M(rows, columns + 1);
 		int cl = columns;
@@ -1984,7 +1984,7 @@ namespace MathParser
 		return M;
 	}
 
-	Matrix Matrix::addColumn(int cl, Vector vec) 
+	Matrix Matrix::addColumn(int cl, Vector& vec) 
 	{
 		Matrix M(rows, columns + 1);
 		for (int i = 0; i < M.rows; ++i) {
@@ -2003,7 +2003,7 @@ namespace MathParser
 		return M;
 	}
 
-	bool Matrix::isInconsistent(Vector b) 
+	bool Matrix::isInconsistent(Vector& b) 
 	{//by Rouche-Capelli Theorem, any system of linear equations 
 	 //(underdetermined or otherwise) is inconsistent if the rank of the 
 	 //augmented matrix is greater than the rank of the coefficient matrix.
@@ -2432,7 +2432,8 @@ namespace MathParser
 	}
 
 	Vector Matrix::eigenvaluesByGaussianElimination() {
-		addColumn(Vector(rows));//make augmented matrix w/ column vector of 0's for solution
+		Vector v(this->rows);
+		addColumn(v);//make augmented matrix w/ column vector of 0's for solution
 		Matrix GE = GaussianElimination();
 		return GE.characteristicPolynomial().realRoots();
 	}

@@ -4,6 +4,7 @@
 int main(int argc, char** argv)
 {
 	MathParser::UserInterface ui;
-	ui.run();			
+	ui.run();	
+
 	return 0;
 }

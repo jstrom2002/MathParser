@@ -3,11 +3,15 @@
 
 namespace MathParser
 {
+	class MemoryManager;
+
 	class UserInterface
 	{
 	public:
 		UserInterface() : windowClose(false) {}
 		void run();
+
+		friend class MemoryManager;
 
 	private:
 		bool windowClose;

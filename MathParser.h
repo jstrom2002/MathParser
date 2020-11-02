@@ -1,5 +1,6 @@
 /**
-*  \brief Parent class for parsing strings. Holds an array of declared math objects in memory as well.
+*  \brief Parent class for parsing strings. Holds an array of declared math objects 
+*	in memory as well.
 */
 
 #pragma once
@@ -8,11 +9,13 @@
 #include "Types.h"
 #include "Function.h"
 #include "Matrix.h"
+#include "MemoryManager.h"
 #include "Polynomial.h"
 
 namespace MathParser
 {
 	class Vector;
+	class UserInterface;
 
 	class MathParser
 	{
@@ -20,23 +23,18 @@ namespace MathParser
 		int precision;
 
 		MathParser();
-
 		void clear();
-		void loadFile(std::string str);
 		std::string parse(std::string str);
-		std::string printSavedFunctions();
-		std::string printSavedMatrices();
-		std::string printSavedPolynomials();
-		void saveFile(std::string str);
 
+		friend class UserInterface;
 	protected:
-		real LAST;
-		std::vector<char> variables;
-		std::vector<Function> savedFunctions;
-		std::vector<Matrix> savedMatrices;
-		std::vector<Polynomial> savedPolynomials;
+		MemoryManager memory;
 
 	private:
+		void clc();
+		std::string disp(std::string str);
+		std::string type(std::string str);
+
 		// Parse input string of form "'f(x,y,z, ..)=exp(x^2)..'" into two strings: 
 		// the right hand side ('exp(x^2...)...etc'), and the lhs 'x,y,z,...etc' ".
 		std::vector<std::string> ParseFunction(std::string in);
@@ -50,6 +48,7 @@ namespace MathParser
 		std::string parseFunctionReference(std::string str, int idx);
 		std::string parseMatrixReference(std::string str, int idx);
 		std::string parsePolynomialReference(std::string str, int idx);
+		std::string parseVectorReference(std::string str, int idx);
 
 		// Parse matrices from the command line in the format '[1,0,0;0,1,0;0,0,1],'
 		// which would be a 3x3 identity matrix.

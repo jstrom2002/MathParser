@@ -11,60 +11,82 @@
 #include <algorithm>
 #include <regex>
 #include <iostream>
+#include <cstdlib>
+#include <fstream>
 
 namespace MathParser
 {
-	MathParser::MathParser() : precision(4), LAST(0)
+	MathParser::MathParser() : precision(4)
 	{
 	}
 
-	void MathParser::loadFile(std::string str)
+	void MathParser::clc()
+	{
+#if defined(WINDOWS) || defined(_WIN32) || defined(_WIN64)
+		std::system("cls");
+#else
+		// Assume POSIX
+		std::system("clear");
+#endif
+	}
+
+	std::string MathParser::disp(std::string str)
 	{
 		// Remove ')' around outside of filename.
 		while (str[str.length() - 1] == ')')
 			str = str.substr(0, str.length() - 1);
 
 		// Remove all chars before "(" from from beginning of filename.
-		str = str.substr(str.find("(")+1);
+		str = str.substr(str.find("(") + 1);
 
-		// Handle file loading according to file extension.
-		std::string ext = getExtension(str);
-		if (str.find(".csv"))		
-			savedMatrices.push_back(csvread(str));		
-		if (str.find(".bmp"))		
-			savedMatrices.push_back(imread(str));		
-	}
+		// Remove all spaces from inner string.
+		str = removeSpaces(str);
 
-	void MathParser::saveFile(std::string str)
-	{
-	}
-
-	std::string MathParser::parseMatrixReference(std::string str, int idx)
-	{
-		if (idx >= savedFunctions.size())
+		// First char will always represent a type of object, ie 'M0' is always
+		// a matrix.
+		char type = str[0];
+		int idx = (int)ParseInputNumber(str.substr(1));
+		if (idx < 0)
 			return "";
 
+		switch (type)
+		{
+		case 'f'://Function
+			if (idx < memory.functions.size())
+				return memory.functions[idx].to_string(this->precision);
+		case 'M'://Matrix
+			if (idx < memory.matrices.size())
+				return "\n" + memory.matrices[idx].to_string(this->precision);				
+		case 'p'://Polynomial
+			if (idx < memory.polynomials.size())
+				return memory.polynomials[idx].to_string(this->precision);
+		case 'v'://Vector
+			if (idx < memory.vectors.size())
+				return memory.vectors[idx].to_string(this->precision);
+		}
+
+		return "";
 	}
 
 	std::string MathParser::parseFunctionReference(std::string str, int idx)
 	{
-		if (idx >= savedFunctions.size())
+		if (idx >= memory.functions.size())
 			return "";
 
 		if (str.find("evaluate(") != std::string::npos)
 		{
-			// Get terms in parentheses and evaluate
+			// Get terms in parentheses and evaluate.
 			std::vector<real> vals = ParseNInputNumbers(
 				str.substr(str.find("("), str.find(")")));
-			LAST = savedFunctions[idx].evaluate(vals, this->precision);
-			return to_string_precision(LAST, this->precision);
+			memory.LAST = memory.functions[idx].evaluate(vals, this->precision);
+			return to_string_precision(memory.LAST, this->precision);
 		}
 		else if (str.find("derivative(") != std::string::npos)
 		{
 			std::vector<real> vals = ParseNInputNumbers(
 				str.substr(str.find("("), str.find(")")));
-			LAST = nthDerivative1D(vals[0],vals[1],savedFunctions[idx], vals[2]);
-			return to_string_precision(LAST, this->precision);
+			memory.LAST = nthDerivative1D(vals[0],vals[1],memory.functions[idx], vals[2]);
+			return to_string_precision(memory.LAST, this->precision);
 		}
 		else if (str.find("integral(") != std::string::npos)
 		{
@@ -72,8 +94,39 @@ namespace MathParser
 				str.substr(str.find("("), str.find(")")));
 			//LAST = integrateSimpsonsRule(vals[0], vals[1], savedFunctions[idx], vals[2]);
 			//LAST = integrateGaussLegendreQuadrature(vals[0], vals[1], savedFunctions[idx]);
-			LAST = integrateGaussKronodQuadrature(vals[0], vals[1], savedFunctions[idx]);
-			return to_string_precision(LAST, this->precision);
+			memory.LAST = integrateGaussKronodQuadrature(vals[0], vals[1], memory.functions[idx]);
+			return to_string_precision(memory.LAST, this->precision);
+		}
+
+		return "";
+	}
+
+	std::string MathParser::parseMatrixReference(std::string str, int idx)
+	{
+		if (idx >= memory.matrices.size())
+			return "";
+
+		if (str.find("reshape(") != std::string::npos)
+		{
+			std::vector<real> vals = ParseNInputNumbers(
+				str.substr(str.find("("), str.find(")")));
+			memory.matrices[idx].reshape(vals[0],vals[1]);
+		}
+		else if (str.find("submatrix(") != std::string::npos)
+		{
+			std::vector<real> vals = ParseNInputNumbers(
+				str.substr(str.find("("), str.find(")")));
+			memory.matrices.push_back(memory.matrices[idx].submatrix(vals[0], vals[1],
+				vals[2],vals[3]));
+		}
+		else if (str.find("inverse()") != std::string::npos)
+		{
+			memory.matrices.push_back(memory.matrices.back().inverse());
+			return memory.matrices.back().to_string(precision);
+		}
+		else if (str.find("det()") != std::string::npos)
+		{
+			return to_string_precision(memory.matrices.back().det(), precision);
 		}
 
 		return "";
@@ -81,7 +134,7 @@ namespace MathParser
 
 	std::string MathParser::parsePolynomialReference(std::string str, int idx)
 	{
-		if (idx >= savedPolynomials.size())
+		if (idx >= memory.polynomials.size())
 			return "";
 
 		if (str.find("evaluate(") != std::string::npos)
@@ -89,12 +142,12 @@ namespace MathParser
 			// Get terms in parentheses and evaluate
 			std::vector<real> vals = ParseNInputNumbers(
 				str.substr(str.find("("), str.find(")")));
-			LAST = savedPolynomials[idx].evaluate(vals[0], this->precision);
-			return to_string_precision(LAST, this->precision);
+			memory.LAST = memory.polynomials[idx].evaluate(vals[0], this->precision);
+			return to_string_precision(memory.LAST, this->precision);
 		}
 		else if (str.find("realRoots()") != std::string::npos)
 		{			
-			std::vector<real> vals = savedPolynomials[idx].realRoots();
+			std::vector<real> vals = memory.polynomials[idx].realRoots();
 			std::string outputStr = "real roots: ";
 			for (int i = 0; i < vals.size(); ++i)
 			{
@@ -106,7 +159,7 @@ namespace MathParser
 		}
 		else if (str.find("roots()") != std::string::npos)
 		{
-			std::vector<ComplexNumber> vals = savedPolynomials[idx].roots();
+			std::vector<ComplexNumber> vals = memory.polynomials[idx].roots();
 			std::string outputStr = "roots: ";
 			for (int i = 0; i < vals.size(); ++i)
 			{
@@ -120,66 +173,17 @@ namespace MathParser
 		return "";
 	}
 
+	std::string MathParser::parseVectorReference(std::string str, int idx)
+	{
+		if (idx >= memory.vectors.size())
+			return "";
+
+	}
+
 	void MathParser::clear()
 	{
-		savedFunctions.clear();
-		savedPolynomials.clear();
-	}
-
-	std::string MathParser::printSavedFunctions()
-	{
-		std::string str = "";
-		if (!savedFunctions.size())
-			return str;
-
-		std::string newline = "\n";
-		for (int i = 0; i < savedFunctions.size(); ++i)
-		{
-			std::string funcName = savedFunctions[i].to_string(this->precision);
-			funcName.insert(funcName.begin() + 1, '0' + i);
-			str.append(funcName + newline);
-		}
-
-		return str;
-	}
-
-	std::string MathParser::printSavedMatrices()
-	{
-		std::string str = "";
-		if (!savedMatrices.size())
-			return str;
-
-		std::string newline = "\n";
-		for (int i = 0; i < savedMatrices.size(); ++i)
-		{
-			std::string funcName = "M";
-			funcName.push_back('0' + i);
-			funcName.append(":");
-			funcName.append(newline);
-			funcName.append(savedMatrices[i].to_string(this->precision));
-			str.append(funcName + newline);
-		}
-
-		return str;
-	}
-
-	std::string MathParser::printSavedPolynomials()
-	{
-		std::string str = "";
-		if (!savedPolynomials.size())
-			return str;
-
-		std::string newline = "\n";
-		for (int i = 0; i < savedPolynomials.size(); ++i)
-		{
-			std::string funcName = "p(x) = ";
-			funcName.insert(funcName.begin() + 1, '0' + i);
-			funcName.append(savedPolynomials[i].to_string(this->precision));
-			str.append(funcName + newline);
-		}
-
-		return str;
-	}
+		memory.clear();
+	}	
 
 	std::string MathParser::parse(std::string str)
 	{
@@ -189,7 +193,7 @@ namespace MathParser
 		// Replace all occurances of word 'LAST' with value for 'last.'
 		if (str.find("LAST") != std::string::npos)
 		{
-			std::string laststr = to_string_precision(LAST, this->precision);
+			std::string laststr = to_string_precision(memory.LAST, this->precision);
 			str = replaceString(str, "LAST", laststr);
 		}
 
@@ -207,12 +211,15 @@ namespace MathParser
 				return "";
 			std::string afterDot = str.substr(str.find(".") + 1);
 
-			if (prestr[0] == 'f')// Find reference to saved function.
+			// Find reference to saved objects.
+			if (prestr[0] == 'f')
 				return parseFunctionReference(afterDot, idx);
-			else if (prestr[0] == 'p')// Find reference to saved polynomial.
+			else if (prestr[0] == 'p')
 				return parsePolynomialReference(afterDot, idx);
-			else if (prestr[0] == 'M')// Find reference to saved matrix.
+			else if (prestr[0] == 'M')
 				return parseMatrixReference(afterDot, idx);
+			else if (prestr[0] == 'v')
+				return parseVectorReference(afterDot, idx);
 		}
 
 		// Check for declared functions, polynomials, etc.
@@ -220,9 +227,9 @@ namespace MathParser
 		{
 			// Save function or polynomial.
 			if (str.find("p(") != std::string::npos)			
-				savedPolynomials.push_back(ParsePolynomial(str));			
+				memory.polynomials.push_back(ParsePolynomial(str));			
 			else			
-				savedFunctions.push_back(ParseFunction(str));	
+				memory.functions.push_back(ParseFunction(str));	
 
 			return "";
 		}
@@ -230,7 +237,7 @@ namespace MathParser
 		// Check for declared matrices.
 		else if (str.find("[") != std::string::npos && str.find("]") != std::string::npos)
 		{
-			savedMatrices.push_back(ParseMatrix(str));
+			memory.matrices.push_back(ParseMatrix(str));
 			return "";
 		}
 
@@ -241,8 +248,8 @@ namespace MathParser
 			str = removeSpaces(str);
 
 			Function fp("", str);
-			LAST = fp.evaluate(0, this->precision);
-			return to_string_precision(LAST, this->precision);
+			memory.LAST = fp.evaluate(0, this->precision);
+			return to_string_precision(memory.LAST, this->precision);
 		}
 		else
 			return "";
@@ -455,5 +462,21 @@ namespace MathParser
 		}
 
 		return Matrix(rows, cols, vals);
+	}
+
+	std::string MathParser::type(std::string str)
+	{
+		str = str.substr(str.find(" ")+1);
+
+		std::ifstream filep(str, std::ios::out);
+		if (!filep.is_open())
+			return "";
+
+		std::string outputStr = "";
+		std::string buff = "";
+		while (getline(filep, buff))
+			outputStr.append(buff);
+
+		return outputStr;
 	}
 }

@@ -59,8 +59,8 @@ namespace MathParser
 		friend Matrix operator/(real x, Matrix& rhs);
 
 		// Class method prototypes:
-		Matrix addColumn(Vector vec);
-		Matrix addColumn(int j, Vector vec);
+		Matrix addColumn(Vector& vec);
+		Matrix addColumn(int j, Vector& vec);
 		Matrix addRow(Vector vec);
 		Matrix addRow(int i, Vector vec);
 		void addToRow(int rw, real n);
@@ -88,7 +88,7 @@ namespace MathParser
 		real columnVariance(int c);
 		real det();
 		Vector diagonal();
-		Matrix directSum(Matrix A, Matrix B);
+		Matrix directSum(Matrix& A, Matrix& B);
 		Matrix dominantEigenvector(int iterations = 500);
 		real dominantEigenvalue(int iterations = 500);
 		Vector eigenvaluesByGaussianElimination();
@@ -102,8 +102,8 @@ namespace MathParser
 		Matrix expandToLowerRight(int r, int c);
 		Matrix extendRows(int r);
 		Matrix extendColumns(int c);
-		Vector findRow(Vector x);
-		Vector findColumn(Vector x);
+		Vector findRow(Vector& x);
+		Vector findColumn(Vector& x);
 		real FTestStatistic();
 		real FrobeniusNorm();
 		Matrix GaussianElimination();//exact calculation of row-echelon form
@@ -123,7 +123,7 @@ namespace MathParser
 		bool isIntegerMatrix();
 		bool isLinearlyIndependent();
 		bool isOrthonormal();
-		bool isInconsistent(Vector b);
+		bool isInconsistent(Vector& b);
 		bool isPositiveDefinite();
 		bool isPositiveSemidefinite();
 		bool isSymmetric();

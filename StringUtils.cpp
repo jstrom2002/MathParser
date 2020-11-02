@@ -67,7 +67,8 @@ namespace MathParser
 	}
 
 	std::string replaceString(std::string str, std::string replace, std::string replacer) {
-		for (int i = 0; i <= str.length(); ++i) {//run replace loop ONCE only
+		for (int i = 0; i <= str.length(); ++i) 
+		{
 			std::string sub = str.substr(i, str.length());
 			int pos = sub.find(replace) + i;
 			if (sub.find(replace) == std::string::npos || pos < 0 || sub.find(replace) > str.length() - 1) {
